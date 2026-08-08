@@ -318,8 +318,21 @@ const VideoCard = ({ video }) => {
             )}
           </div>
         ) : (
-          <div style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-            Video lỗi hoặc không tìm thấy
+          <div style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', gap: '12px' }}>
+            <span style={{ fontSize: '16px' }}>Video bị chặn hoặc không tìm thấy (CORS)</span>
+            <button 
+              className="retry-btn"
+              style={{ padding: '8px 24px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setUseEmbedFallback(false);
+                if (videoRef.current) {
+                  videoRef.current.load();
+                }
+              }}
+            >
+              Tải lại video
+            </button>
           </div>
         )}
         
