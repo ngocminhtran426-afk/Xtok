@@ -28,7 +28,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Initialize Google Sheets Adapter directly
-const GOOGLE_SHEETS_SPREADSHEET_ID = '1lfeOs66_LGIbbWjxi10iUzWO0H-2BZWN2y404RmFtB0';
+const GOOGLE_SHEETS_SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '1UPqruSLiYDC6Jr_tyhHaxH2M8jAUxZPGsNecdisbQ_E';
 
 // Decode obfuscated credentials for deployment
 if (fs.existsSync(path.join(process.cwd(), 'credentials.b64'))) {
