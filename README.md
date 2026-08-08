@@ -12,15 +12,15 @@ XTok là một ứng dụng Web mô phỏng TikTok, với khả năng tự độ
 
 ---
 
-## 🛠️ Cấu trúc hệ thống (Architecture)
-Hệ thống được chia làm 2 phần chính:
+## 🛠️ Phân chia nhiệm vụ (Kiến trúc phân tán)
+Hệ thống được thiết kế để phân tải tối đa, chia làm 2 phần rõ rệt:
 
-1. **Thư mục `/web` (Frontend - React + Vite)**
-   - Đảm nhiệm giao diện hiển thị video.
-   - Các tính năng: Component thẻ video, thanh cuộn Feed, tính toán tỉ lệ hiển thị.
-2. **Thư mục `/crawler` (Backend + Bot)**
-   - API phục vụ cho Web (`api.ts`).
-   - Bot tự động thu thập video (`index.ts`, `worker.ts`).
+1. **Giao diện Web & API (Nên chạy trên Render)**
+   - Nằm trong thư mục `/web` và lệnh `npm run api` của thư mục `/crawler`.
+   - Phục vụ người xem lướt video với hiệu năng cao. Tự động lấy nguồn từ Github mỗi khi có code mới.
+2. **Cỗ máy cào dữ liệu - Bot Crawler (Nên chạy trên VPS)**
+   - Nằm trong thư mục `/crawler`.
+   - Chuyên đóng vai trò tự động hóa bằng công nghệ giả lập trình duyệt Playwright, cào video xuyên ngày đêm, lật trang liên tục để đẩy vào CSDL.
 
 ---
 
@@ -50,15 +50,17 @@ npm run api    # Để chạy Server API
 
 ---
 
-## ☁️ Hướng dẫn cài đặt tự động lên máy chủ VPS (Ubuntu)
+## ☁️ Hướng dẫn biến VPS thành "Lò luyện Bot" cào dữ liệu 24/7
 
-Nếu bạn có một VPS chạy **Ubuntu 20.04 / 22.04**, bạn có thể cài đặt tự động TOÀN BỘ dự án này chỉ bằng 1 dòng lệnh duy nhất. Đăng nhập vào VPS bằng quyền `root` và chạy:
+Để giải phóng cho máy tính cá nhân và đảm bảo Bot cào không ngừng nghỉ, bạn hãy dùng một VPS (chạy Ubuntu 20.04 hoặc 22.04) và dán 1 dòng lệnh duy nhất này vào bằng quyền `root`:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/ngocminhtran426-afk/Xtok/main/setup_vps.sh | sudo bash -
 ```
 
-Kịch bản tự động sẽ cài đặt mọi thứ: Node.js, Nginx, PM2, Tải mã nguồn, Biên dịch, và Khởi động hệ thống. Sau vài phút, bạn chỉ cần gõ IP của VPS lên trình duyệt là sử dụng được luôn!
+Kịch bản này sẽ gạt bỏ mọi thứ dư thừa và **chỉ thiết lập duy nhất con Bot Crawler** chạy ngầm bằng công cụ PM2. Máy chủ VPS của bạn sẽ siêu nhẹ và tập trung 100% tài nguyên cho việc "săn" video!
+
+*Để xem Bot đang cào được bao nhiêu video trên VPS, gõ lệnh:* `sudo pm2 logs xtok-crawler`
 
 ## 📜 Giấy phép (License)
 Dự án được xây dựng cho mục đích học tập và nghiên cứu mã nguồn mở.

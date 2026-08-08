@@ -1,18 +1,18 @@
 #!/bin/bash
 
 echo "==================================================="
-echo "  🚀 XTOK VPS AUTO SETUP SCRIPT"
+echo "  🚀 XTOK VPS AUTO SETUP SCRIPT (BOT ONLY)"
 echo "==================================================="
 
-echo "[1/6] Đang cập nhật hệ thống..."
+echo "[1/4] Đang cập nhật hệ thống..."
 sudo apt update && sudo apt upgrade -y
 
-echo "[2/6] Đang cài đặt Node.js 20, Git, Nginx, PM2..."
+echo "[2/4] Đang cài đặt Node.js 20, Git, PM2..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs git nginx
+sudo apt install -y nodejs git
 sudo npm install -g pm2
 
-echo "[3/6] Đang tải mã nguồn từ Github..."
+echo "[3/4] Đang tải mã nguồn từ Github..."
 sudo mkdir -p /var/www
 cd /var/www
 if [ -d "xtok" ]; then
@@ -24,12 +24,7 @@ else
     cd xtok
 fi
 
-echo "[4/6] Đang cấu hình và cài đặt Web Frontend..."
-cd /var/www/xtok/web
-sudo npm install
-sudo npm run build
-
-echo "[5/6] Đang cấu hình và cài đặt Crawler / API..."
+echo "[4/4] Đang cấu hình và cài đặt Crawler Bot..."
 cd /var/www/xtok/crawler
 sudo npm install
 sudo npx playwright install --with-deps chromium
@@ -40,43 +35,14 @@ if [ ! -f .env ]; then
     echo "CRAWLER_ENABLED=true" | sudo tee -a .env > /dev/null
 fi
 
-# Chạy các dịch vụ ngầm bằng PM2
-sudo pm2 delete all 2>/dev/null
-sudo pm2 start npm --name "xtok-api" -- run api
+# Chạy dịch vụ cào dữ liệu bằng PM2
+sudo pm2 delete xtok-crawler 2>/dev/null
 sudo pm2 start npm --name "xtok-crawler" -- run start
 sudo pm2 save
 sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u root --hp /root 2>/dev/null
 
-echo "[6/6] Đang cấu hình Nginx (Web Server)..."
-cat << 'EOF' | sudo tee /etc/nginx/sites-available/xtok
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        root /var/www/xtok/web/dist;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api/ {
-        proxy_pass http://localhost:3000/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-EOF
-
-sudo ln -sf /etc/nginx/sites-available/xtok /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl restart nginx
-
 echo "==================================================="
 echo "  ✅ CÀI ĐẶT HOÀN TẤT!"
 echo "==================================================="
-echo "Trang Web và hệ thống cào dữ liệu đã được cài đặt và đang chạy ngầm."
-echo "Hãy mở trình duyệt và truy cập vào IP của VPS này để xem thành quả nhé!"
+echo "Hệ thống cào dữ liệu (Bot Crawler) đã được cài đặt và đang chạy ngầm 24/7."
+echo "Để xem tiến trình của Bot, bạn có thể dùng lệnh: sudo pm2 logs xtok-crawler"
