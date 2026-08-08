@@ -316,8 +316,21 @@ app.delete('/api/users/:id', requireAuth, requireAdmin, async (req, res) => {
 });
 
 app.post('/api/users/me/avatar', requireAuth, upload.single('avatar'), async (req, res) => {
-  // Tạm thời vô hiệu hóa tính năng Upload Avatar theo yêu cầu
-  return res.status(501).json({ error: 'Feature temporarily disabled for deployment' });
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No image provided' });
+
+    const avatar_url = `/uploads/avatars/${file.filename}`;
+    
+    // Update user in MongoDB
+    const userId = (req as any).user.id;
+    await User.findByIdAndUpdate(userId, { avatar_url });
+
+    res.json({ success: true, avatar_url });
+  } catch (error) {
+    console.error('[API] Error uploading avatar:', error);
+    res.status(500).json({ error: 'Failed to upload avatar' });
+  }
 });
 
 // Serve frontend static files
