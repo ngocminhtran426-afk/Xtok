@@ -23,14 +23,8 @@ if (!fs.existsSync(avatarsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
-// Configure multer for avatar uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarsDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `avatar-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
+// Configure multer for avatar uploads (using memory storage for cloud upload)
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Initialize Google Sheets Adapter directly
@@ -320,7 +314,18 @@ app.post('/api/users/me/avatar', requireAuth, upload.single('avatar'), async (re
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No image provided' });
 
-    const avatar_url = `/uploads/avatars/${file.filename}`;
+    const blob = new Blob([file.buffer], { type: file.mimetype });
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', blob, file.originalname);
+
+    const response = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) throw new Error('Catbox upload failed');
+    const avatar_url = await response.text();
     
     // Update user in MongoDB
     const userId = (req as any).user.id;
