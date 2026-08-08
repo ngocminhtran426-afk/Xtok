@@ -305,8 +305,9 @@ const VideoCard = ({ video }) => {
           <div className="video-element iframe-wrapper" style={{ position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             {inView ? (
               <video 
+                key={retryCount}
                 ref={videoRef}
-                src={retryCount > 0 ? `${finalMp4Url}${finalMp4Url.includes('?') ? '&' : '?'}retry=${retryCount}` : finalMp4Url}
+                src={finalMp4Url}
                 className="video-element"
                 loop
                 muted={isMuted}
