@@ -6,6 +6,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { connectDb, User, WatchHistory } from './db';
+import { GoogleSheetsAdapter } from './adapters/google-sheets/adapter';
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-2026';
@@ -32,15 +33,18 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- MOCK VIDEOS FOR DEPLOYMENT ---
-const MOCK_VIDEOS = Array.from({ length: 100 }).map((_, i) => ({
-  id: (1000 + i).toString(),
-  videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-  thumbnailUrl: i % 2 === 0 ? 'https://images.unsplash.com/photo-1616469829581-73993eb86b02' : 'https://images.unsplash.com/photo-1611162617474-5b21e879e113',
-  title: `Mock Video ${i + 1}`,
-  description: 'Testing render deployment. This is a mock video to fill the feed.',
-  likes: Math.floor(Math.random() * 500)
-}));
+// Initialize Google Sheets Adapter directly
+const GOOGLE_SHEETS_SPREADSHEET_ID = '1lfeOs66_LGIbbWjxi10iUzWO0H-2BZWN2y404RmFtB0';
+
+// Decode obfuscated credentials for deployment
+if (fs.existsSync(path.join(process.cwd(), 'credentials.b64'))) {
+  fs.writeFileSync(path.join(process.cwd(), 'credentials.json'), Buffer.from(fs.readFileSync(path.join(process.cwd(), 'credentials.b64'), 'utf-8'), 'base64'));
+}
+if (fs.existsSync(path.join(process.cwd(), 'token.b64'))) {
+  fs.writeFileSync(path.join(process.cwd(), 'token.json'), Buffer.from(fs.readFileSync(path.join(process.cwd(), 'token.b64'), 'utf-8'), 'base64'));
+}
+
+const db = new GoogleSheetsAdapter(GOOGLE_SHEETS_SPREADSHEET_ID);
 
 // --- AUTH MIDDLEWARE ---
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
@@ -70,7 +74,10 @@ app.get('/api/videos', requireAuth, async (req, res) => {
   try {
     const now = Date.now();
     if (now - lastFetchTime > CACHE_TTL_MS || cachedVideos.length === 0) {
-      const items = MOCK_VIDEOS;
+      if (lastFetchTime > 0) {
+        await (db as any).refreshCache(); // Force adapter to pull fresh data from sheet
+      }
+      const { items } = await db.findVideos({ limit: 100 });
       
       // Map to TikTok UI expected schema
       cachedVideos = items.map((v: any) => ({
@@ -171,7 +178,7 @@ app.get('/api/videos/history', requireAuth, async (req, res) => {
     
     // Ensure cache is populated
     if (cachedVideos.length === 0) {
-      const items = MOCK_VIDEOS;
+      const { items } = await db.findVideos({ limit: 100 });
       cachedVideos = items.map((v: any) => ({
         id: parseInt(v.id) || Math.random(),
         thumb_url: v.thumbnailUrl,
@@ -332,9 +339,12 @@ app.listen(port, async () => {
     await connectDb(); // Initialize MongoDB
     console.log(`[API] Connected to MongoDB`);
     
+    await db.connect();
+    console.log(`[API] Connected to Google Sheets`);
+    
     // Initial fetch to prime the cache
-    const items = MOCK_VIDEOS;
-    cachedVideos = items.map(v => ({
+    const { items } = await db.findVideos({ limit: 100 });
+    cachedVideos = items.map((v: any) => ({
       id: parseInt(v.id) || Math.random(),
       thumb_url: v.thumbnailUrl,
       file_url: v.videoUrl,
@@ -364,6 +374,6 @@ app.listen(port, async () => {
     lastFetchTime = Date.now();
     console.log(`[API] Cache primed with ${items.length} videos`);
   } catch (error) {
-    console.error(`[API] Failed to connect to DB:`, error);
+    console.error(`[API] Failed to connect to DB or Sheets:`, error);
   }
 });
