@@ -243,10 +243,8 @@ export class Worker {
         errorCount: page.errorCount + 1,
         lastError: errorMsg,
         lastCrawledAt: new Date().toISOString(),
-        // Backoff: double the interval on error
-        nextCrawlAt: new Date(
-          Date.now() + page.crawlInterval * Math.min(Math.pow(2, page.errorCount), 16) * 1000,
-        ).toISOString(),
+        // Luôn giữ đúng crawlInterval, không tăng thời gian lùi lại khi có lỗi
+        nextCrawlAt: new Date(Date.now() + page.crawlInterval * 1000).toISOString(),
       });
     }
 
