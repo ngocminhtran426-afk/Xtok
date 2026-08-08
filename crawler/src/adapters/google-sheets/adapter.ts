@@ -21,10 +21,8 @@ const TABS = {
 // Header definitions for each tab
 const HEADERS = {
   [TABS.VIDEOS]: [
-    'id', 'source_id', 'source_page', 'title', 'description',
-    'video_url', 'thumbnail_url', 'duration', 'published_at',
-    'discovered_at', 'content_hash', 'status', 'views', 'likes',
-    'created_at', 'updated_at',
+    'id', 'source_id', 'source_page', 'title',
+    'video_url', 'thumbnail_url'
   ],
   [TABS.PAGES]: [
     'id', 'url', 'status', 'priority', 'last_crawled_at',
@@ -420,18 +418,8 @@ export class GoogleSheetsAdapter implements DatabaseAdapter {
       video.sourceId,
       video.sourcePage,
       video.title,
-      video.description,
       video.videoUrl,
       video.thumbnailUrl,
-      String(video.duration),
-      video.publishedAt,
-      video.discoveredAt,
-      video.contentHash,
-      video.status,
-      String(video.views),
-      String(video.likes),
-      video.createdAt,
-      video.updatedAt,
     ];
   }
 
