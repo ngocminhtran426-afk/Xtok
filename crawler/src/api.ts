@@ -314,18 +314,10 @@ app.post('/api/users/me/avatar', requireAuth, upload.single('avatar'), async (re
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No image provided' });
 
-    const blob = new Blob([file.buffer], { type: file.mimetype });
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('fileToUpload', blob, file.originalname);
-
-    const response = await fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (!response.ok) throw new Error('Catbox upload failed');
-    const avatar_url = await response.text();
+    // Thay vì dùng Catbox (bị block IP trên Render), ta lưu trực tiếp Base64 vào MongoDB
+    // File ảnh đại diện thường nhỏ nên lưu Base64 hoàn toàn khả thi và an toàn nhất
+    const base64Data = file.buffer.toString('base64');
+    const avatar_url = `data:${file.mimetype};base64,${base64Data}`;
     
     // Update user in MongoDB
     const userId = (req as any).user.id;
