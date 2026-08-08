@@ -64,7 +64,9 @@ export class GenericParser implements SourceParser {
           ? (CrawlerConfig as any).processItem(rawVideo) 
           : rawVideo;
 
-        videos.push(processedVideo as NormalizedVideo);
+        if (processedVideo) {
+          videos.push(processedVideo as NormalizedVideo);
+        }
       } catch (err) {
         console.error(`[GenericParser] Error parsing item ${index}:`, err);
       }
