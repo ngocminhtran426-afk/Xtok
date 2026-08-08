@@ -66,13 +66,10 @@ app.get('/api/videos', requireAuth, async (req, res) => {
   try {
     const now = Date.now();
     if (now - lastFetchTime > CACHE_TTL_MS || cachedVideos.length === 0) {
-      if (lastFetchTime > 0) {
-        await (db as any).refreshCache(); // Force adapter to pull fresh data from sheet
-      }
-      const { items } = await db.findVideos({ limit: 100 });
+      const items = MOCK_VIDEOS;
       
       // Map to TikTok UI expected schema
-      cachedVideos = items.map(v => ({
+      cachedVideos = items.map((v: any) => ({
         id: parseInt(v.id) || Math.random(),
         thumb_url: v.thumbnailUrl,
         file_url: v.videoUrl,
@@ -170,8 +167,8 @@ app.get('/api/videos/history', requireAuth, async (req, res) => {
     
     // Ensure cache is populated
     if (cachedVideos.length === 0) {
-      const { items } = await (db as any).findVideos({ limit: 100 });
-      cachedVideos = items.map(v => ({
+      const items = MOCK_VIDEOS;
+      cachedVideos = items.map((v: any) => ({
         id: parseInt(v.id) || Math.random(),
         thumb_url: v.thumbnailUrl,
         file_url: v.videoUrl,
