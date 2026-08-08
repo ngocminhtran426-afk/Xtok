@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://hvanhau308_db_user:GkCOfQfqyC9g81tq@cluster0.wewljr5.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = 'mongodb+srv://hvanhau308_db_user:GkCOfQfqyC9g81tq@cluster0.wewljr5.mongodb.net/?appName=Cluster0';
 
 // Define Schemas
 const userSchema = new mongoose.Schema({
@@ -40,7 +40,7 @@ export const Video = mongoose.model('Video', videoSchema);
 let isConnected = false;
 
 export const connectDb = async () => {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://hvanhau308_db_user:GkCOfQfqyC9g81tq@cluster0.wewljr5.mongodb.net/?appName=Cluster0';
+const mongoUri = 'mongodb+srv://hvanhau308_db_user:GkCOfQfqyC9g81tq@cluster0.wewljr5.mongodb.net/?appName=Cluster0';
   if (!mongoUri) {
     throw new Error('MONGODB_URI environment variable is not defined');
   }
