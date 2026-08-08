@@ -76,8 +76,8 @@ app.get('/api/videos', requireAuth, async (req, res) => {
       // Map to TikTok UI expected schema
       cachedVideos = items.map((v: any) => ({
         id: parseInt(v.id) || Math.random(),
-        thumb_url: v.thumbnailUrl,
-        file_url: v.videoUrl,
+        thumb_url: v.thumbnail_url,
+        file_url: v.video_url,
         description: v.description || v.title,
         music: 'Original sound - VideoPlatform',
         likes_count: v.likes || Math.floor(Math.random() * 10000),
@@ -175,8 +175,8 @@ app.get('/api/videos/history', requireAuth, async (req, res) => {
       const { items } = await db.findVideos({ limit: 100 });
       cachedVideos = items.map((v: any) => ({
         id: parseInt(v.id) || Math.random(),
-        thumb_url: v.thumbnailUrl,
-        file_url: v.videoUrl,
+        thumb_url: v.thumbnail_url,
+        file_url: v.video_url,
         description: v.description || v.title,
         music: 'Original sound - VideoPlatform',
         likes_count: v.likes || Math.floor(Math.random() * 10000),
