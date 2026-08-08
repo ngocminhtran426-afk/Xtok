@@ -39,11 +39,15 @@ export const Video = mongoose.model('Video', videoSchema);
 
 let isConnected = false;
 
-export async function connectDb() {
+export const connectDb = async () => {
+  const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://ngocminhtran426_db_user:cTezqk6ZENFJJu39@cluster0.dkjy0jm.mongodb.net/?appName=Cluster0';
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI environment variable is not defined');
+  }
   if (isConnected) return;
   
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(mongoUri);
     isConnected = true;
     console.log('[DB] Connected to MongoDB Atlas');
 
