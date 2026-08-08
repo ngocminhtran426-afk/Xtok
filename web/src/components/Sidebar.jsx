@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Compass, UserCheck, Tv, PlusSquare, Search, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Sidebar = () => {
   const [topUsers, setTopUsers] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTopUsers = async () => {
@@ -19,8 +21,8 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
-        <span style={{ color: 'var(--primary-color)' }}>♪</span> TikTok
+      <div className="sidebar-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <span style={{ color: 'var(--primary-color)' }}>♪</span> XTok
       </div>
       
       <div className="sidebar-search">
