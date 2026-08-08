@@ -332,9 +332,14 @@ const VideoCard = ({ video }) => {
               style={{ padding: '8px 24px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
               onClick={(e) => {
                 e.stopPropagation();
-                setRetryCount(prev => prev + 1);
+                // Thay đổi retryCount thành timestamp để chắc chắn bypass cache 100%
+                setRetryCount(Date.now());
                 setResolvedMp4Url(null); // Force re-fetch of the MP4 URL
-                setUseEmbedFallback(false);
+                
+                // Đợi 500ms cho extension (Allow CORS) khởi động xong rồi mới tải lại
+                setTimeout(() => {
+                  setUseEmbedFallback(false);
+                }, 500);
               }}
             >
               Tải lại video
