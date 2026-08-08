@@ -66,9 +66,9 @@ const Sidebar = () => {
               <User size={20} color="#ccc" />
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <span style={{ fontSize: 14, fontWeight: 'bold', lineHeight: '1' }}>{u.username}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 'normal', lineHeight: '1' }}>User {u.id}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 'normal', lineHeight: '1' }}>@{u.username}</span>
           </div>
         </div>
       ))}
