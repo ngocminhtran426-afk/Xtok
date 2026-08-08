@@ -33,10 +33,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // --- MOCK VIDEOS FOR DEPLOYMENT ---
-const MOCK_VIDEOS = [
-  { id: '1', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1616469829581-73993eb86b02', title: 'Video 1', description: 'Hello world', likes: 100 },
-  { id: '2', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113', title: 'Video 2', description: 'Testing render deployment', likes: 250 }
-];
+const MOCK_VIDEOS = Array.from({ length: 100 }).map((_, i) => ({
+  id: (1000 + i).toString(),
+  videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+  thumbnailUrl: i % 2 === 0 ? 'https://images.unsplash.com/photo-1616469829581-73993eb86b02' : 'https://images.unsplash.com/photo-1611162617474-5b21e879e113',
+  title: `Mock Video ${i + 1}`,
+  description: 'Testing render deployment. This is a mock video to fill the feed.',
+  likes: Math.floor(Math.random() * 500)
+}));
 
 // --- AUTH MIDDLEWARE ---
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
