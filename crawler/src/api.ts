@@ -11,7 +11,7 @@ import { connectDb, User, WatchHistory } from './db';
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-2026';
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
