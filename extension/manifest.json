@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "xNhau Cloudflare Bypasser",
+  "version": "1.0",
+  "description": "Extension hỗ trợ vượt Cloudflare và mở khóa X-Frame-Options cho Tiktok UI Web.",
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "cookies",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.xnhau.loan/*",
+    "*://*.xnhau.tech/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "xNhau Bypasser"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}

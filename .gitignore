@@ -1,0 +1,31 @@
+# Ignore node_modules
+node_modules/
+**/node_modules/
+
+# Ignore databases and uploads
+database.sqlite
+uploads/
+**/uploads/
+
+# Ignore crawler profiles and temporary browser data
+crawler_profile/
+
+# Ignore test scripts and backups
+test-*.js
+replace-url.js
+backup_working_files/
+web_backup/
+*.bat
+electron_log.txt
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Build output
+dist/
+build/
+.next/
+out/

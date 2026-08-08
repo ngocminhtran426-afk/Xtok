@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        { "header": "x-frame-options", "operation": "remove" },
+        { "header": "content-security-policy", "operation": "remove" },
+        { "header": "cross-origin-embedder-policy", "operation": "remove" },
+        { "header": "cross-origin-opener-policy", "operation": "remove" },
+        { "header": "cross-origin-resource-policy", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "xnhau",
+      "resourceTypes": ["sub_frame", "xmlhttprequest", "main_frame", "media"]
+    }
+  }
+]

@@ -1,0 +1,505 @@
+:root {
+  --bg-color: #121212;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.75);
+  --border-color: rgba(255, 255, 255, 0.12);
+  --primary-color: #fe2c55;
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --header-height: 60px;
+  --sidebar-width: 240px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+/* App Layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  height: 100vh;
+}
+
+/* Top Actions (replaces top header) */
+.top-actions {
+  position: fixed;
+  top: 16px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1000;
+}
+
+.sidebar-logo {
+  font-weight: 800; /* Extra bold */
+  font-size: 32px; /* Increased from 24px */
+  letter-spacing: -1px; /* Tighter letter spacing like the real logo */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  margin-bottom: 8px;
+}
+
+.sidebar-search {
+  padding: 0 12px;
+  margin-bottom: 24px;
+}
+
+.search-input-wrapper {
+  background-color: rgba(255, 255, 255, 0.12); /* Slightly darker */
+  border-radius: 92px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input-wrapper svg {
+  margin-right: 8px;
+}
+
+.search-input-wrapper input {
+  background: transparent;
+  border: none;
+  color: white;
+  width: 100%;
+  outline: none;
+}
+
+.search-btn {
+  padding-left: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-upload {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 16px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* Main Content */
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  border-right: 1px solid var(--border-color);
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  overflow-y: auto;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px; /* TikTok has rounded hover effects */
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sidebar-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.sidebar-item.active {
+  color: var(--primary-color);
+}
+
+.sidebar-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 16px 8px;
+}
+
+/* Video Feed */
+.video-feed {
+  flex-grow: 1;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #000; /* TikTok background */
+}
+
+.video-feed::-webkit-scrollbar {
+  display: none;
+}
+.video-feed {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Immersive Video Card */
+.video-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  padding: 16px 0; /* Minimal padding for modern look */
+}
+
+.video-wrapper {
+  position: relative;
+  /* Width and height are now calculated dynamically in JS for native videos */
+  max-width: 1000px;
+  background-color: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+}
+
+.video-wrapper.is-webview {
+  /* Iframe không có kích thước nội tại, đành phải ép full chiều cao và tỷ lệ 9:16 */
+  height: calc(100vh - 32px);
+  aspect-ratio: 9 / 16;
+}
+
+.webview-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.webview-element {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hiệu ứng mờ đen dưới đáy video để nổi bật chữ */
+.video-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.video-element {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Lớp phủ hứng click */
+.click-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  cursor: pointer;
+}
+
+/* Floating Actions (Right Side - Outside Video) */
+.floating-actions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 15;
+  margin-left: 20px;
+  align-self: flex-end;
+  /* margin-bottom không cần nữa vì align-self: flex-end sẽ tự ép nó bằng mép dưới của video-wrapper do có padding */
+}
+
+.action-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+}
+
+.action-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid white;
+  object-fit: cover;
+}
+
+.follow-btn {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.action-icon {
+  width: 40px;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.action-icon:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-count {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.music-disc {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: conic-gradient(#333 0deg, #111 90deg, #333 180deg, #111 270deg, #333 360deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  animation: spin 5s linear infinite;
+}
+
+.music-disc img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Floating Info & Controls Container (Bottom Left) */
+.bottom-controls-container {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 15;
+  padding: 16px;
+  /* Hiệu ứng gradient mượt mà để dễ nhìn chữ */
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-info {
+  position: relative; /* was absolute */
+  width: 100%;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  margin-bottom: 12px;
+}
+
+.floating-info .user-nickname {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.floating-info .video-desc {
+  font-size: 14px;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.floating-info .music-tag {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Custom Player Controls */
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  transition: opacity 0.3s;
+  opacity: 0.6; /* Hơi mờ khi không tương tác */
+}
+
+.video-wrapper:hover .player-controls {
+  opacity: 1;
+}
+
+.play-btn, .mute-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.play-btn:hover, .mute-btn:hover {
+  transform: scale(1.1);
+}
+
+.time-display {
+  font-size: 12px;
+  font-family: 'Inter', monospace;
+  color: #fff;
+  min-width: 80px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.progress-bar-container {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+
+.progress-bar {
+  width: 100%;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volume-control:hover .volume-slider {
+  width: 60px;
+  opacity: 1;
+}
+
+.volume-slider {
+  width: 0px;
+  opacity: 0;
+  transition: width 0.3s ease, opacity 0.3s ease;
+  cursor: pointer;
+  accent-color: #fff;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Floating Navigation Buttons (Up/Down) */
+.nav-buttons {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1000;
+}
+
+.nav-btn {
+  width: 44px;
+  height: 44px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
