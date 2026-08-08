@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import mongoose from 'mongoose';
 import { connectDb, User, WatchHistory } from './db';
 import { GoogleSheetsAdapter } from './adapters/google-sheets/adapter';
 
@@ -230,6 +231,27 @@ app.post('/api/videos/seen', requireAuth, async (req, res) => {
 });
 
 // --- AUTH ENDPOINTS ---
+app.get('/api/ping-db', async (req, res) => {
+  try {
+    const mongooseState = mongoose.connection.readyState;
+    let sheetCount = -1;
+    try {
+      const { items } = await db.findVideos({ limit: 100 });
+      sheetCount = items.length;
+    } catch(e) {
+      sheetCount = -2;
+    }
+    res.json({
+      mongooseState,
+      stateMap: { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' },
+      sheetCount,
+      cachedCount: cachedVideos.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
