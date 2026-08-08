@@ -9,6 +9,9 @@ on:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    concurrency:
+      group: crawler-singleton
+      cancel-in-progress: false
     
     steps:
       - name: Checkout code
