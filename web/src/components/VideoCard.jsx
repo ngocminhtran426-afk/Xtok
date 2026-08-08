@@ -15,6 +15,7 @@ const VideoCard = ({ video }) => {
   const [isMuted, setIsMuted] = useState(globalMuted);
   const [resolvedMp4Url, setResolvedMp4Url] = useState(null);
   const [useEmbedFallback, setUseEmbedFallback] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const videoRef = useRef(null);
   const bgVideoRef = useRef(null);
   const hasMarkedSeen = useRef(false);
@@ -299,7 +300,7 @@ const VideoCard = ({ video }) => {
             {inView ? (
               <video 
                 ref={videoRef}
-                src={finalMp4Url}
+                src={retryCount > 0 ? `${finalMp4Url}${finalMp4Url.includes('?') ? '&' : '?'}retry=${retryCount}` : finalMp4Url}
                 className="video-element"
                 loop
                 muted={isMuted}
@@ -325,10 +326,8 @@ const VideoCard = ({ video }) => {
               style={{ padding: '8px 24px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
               onClick={(e) => {
                 e.stopPropagation();
+                setRetryCount(prev => prev + 1);
                 setUseEmbedFallback(false);
-                if (videoRef.current) {
-                  videoRef.current.load();
-                }
               }}
             >
               Tải lại video
