@@ -21,6 +21,15 @@ import * as path from 'path';
 
 // Load .env
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+import * as fs from 'fs';
+
+// Decode obfuscated credentials for deployment
+if (fs.existsSync(path.join(process.cwd(), 'credentials.b64'))) {
+  fs.writeFileSync(path.join(process.cwd(), 'credentials.json'), Buffer.from(fs.readFileSync(path.join(process.cwd(), 'credentials.b64'), 'utf-8'), 'base64'));
+}
+if (fs.existsSync(path.join(process.cwd(), 'token.b64'))) {
+  fs.writeFileSync(path.join(process.cwd(), 'token.json'), Buffer.from(fs.readFileSync(path.join(process.cwd(), 'token.b64'), 'utf-8'), 'base64'));
+}
 
 async function main() {
   console.log('===================================');

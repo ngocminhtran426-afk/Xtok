@@ -1,0 +1,41 @@
+name: Auto Crawler
+
+on:
+  schedule:
+    # Chạy mỗi 3 tiếng một lần (phút 0, giờ 0, 3, 6, 9, 12, 15, 18, 21)
+    - cron: '0 */3 * * *'
+  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub UI
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./crawler
+        run: npm install
+
+      - name: Install Playwright Browsers
+        working-directory: ./crawler
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Crawler
+        working-directory: ./crawler
+        env:
+          GOOGLE_SHEETS_SPREADSHEET_ID: '1lfeOs66_LGIbbWjxi10iUzWO0H-2BZWN2y404RmFtB0'
+          CRAWLER_ENABLED: 'true'
+          MAX_PAGES_PER_RUN: '20'
+          DEFAULT_CRAWL_INTERVAL: '1800'
+          MAX_CONCURRENT_WORKERS: '3'
+          MAX_RETRY_ATTEMPTS: '3'
+          SOURCE_BASE_URL: 'https://xnhau.ink'
+          SOURCE_TYPE: 'xnhau'
+        run: npm run start
