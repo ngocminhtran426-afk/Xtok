@@ -311,6 +311,15 @@ app.post('/api/users/me/avatar', requireAuth, upload.single('avatar'), async (re
   return res.status(501).json({ error: 'Feature temporarily disabled for deployment' });
 });
 
+// Serve frontend static files
+const frontendDistPath = path.join(__dirname, '../../web/dist');
+app.use(express.static(frontendDistPath));
+
+// Fallback to index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
+
 app.listen(port, async () => {
   console.log(`===================================`);
   console.log(`  Video Platform API Server`);
