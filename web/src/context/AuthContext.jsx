@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Initialize token synchronously to prevent race conditions on page reload
+const initialToken = localStorage.getItem('token');
+if (initialToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`;
+}
+
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
