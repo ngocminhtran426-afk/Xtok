@@ -21,8 +21,9 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => window.location.href = '/'}>
-        <img src="/logo.png" alt="XTok Logo" style={{ height: '32px' }} />
+      <div className="sidebar-logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => window.location.href = '/'}>
+        <img src="/logo.png" alt="XTok Logo" style={{ height: '36px', borderRadius: '50%' }} />
+        <span style={{ fontSize: '26px', fontWeight: 'bold', letterSpacing: '1px' }}>XTok</span>
       </div>
       
       <div className="sidebar-search">
