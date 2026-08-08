@@ -21,8 +21,8 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-        <span style={{ color: 'var(--primary-color)' }}>♪</span> XTok
+      <div className="sidebar-logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => window.location.href = '/'}>
+        <img src="/logo.png" alt="XTok Logo" style={{ height: '32px' }} />
       </div>
       
       <div className="sidebar-search">
