@@ -437,7 +437,11 @@ export class GoogleSheetsAdapter implements DatabaseAdapter {
 
   private rowToPage(headers: string[], row: string[]): Page | null {
     if (!row || row.length === 0) return null;
-    const get = (key: string) => row[headers.indexOf(key)] || '';
+    const get = (key: string) => {
+      const idx = headers.indexOf(key);
+      if (idx === -1 || row[idx] === undefined) return '';
+      return String(row[idx]).trim();
+    };
     
     return {
       id: get('id'),
