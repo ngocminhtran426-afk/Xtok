@@ -25,10 +25,7 @@ const HEADERS = {
     'video_url', 'thumbnail_url'
   ],
   [TABS.PAGES]: [
-    'id', 'url', 'status', 'priority', 'last_crawled_at',
-    'last_success_at', 'last_content_hash', 'next_crawl_at',
-    'crawl_interval', 'error_count', 'last_error',
-    'created_at', 'updated_at',
+    'id', 'url', 'status'
   ],
   [TABS.CRAWL_JOBS]: [
     'id', 'page_id', 'url', 'status', 'attempt',
@@ -452,17 +449,7 @@ export class GoogleSheetsAdapter implements DatabaseAdapter {
     return [
       page.id,
       page.url,
-      page.status,
-      page.priority,
-      page.lastCrawledAt,
-      page.lastSuccessAt,
-      page.lastContentHash,
-      page.nextCrawlAt,
-      String(page.crawlInterval),
-      String(page.errorCount),
-      page.lastError,
-      page.createdAt,
-      page.updatedAt,
+      page.status
     ];
   }
 
