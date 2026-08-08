@@ -18,11 +18,24 @@ const watchHistorySchema = new mongoose.Schema({
   viewed_at: { type: Date, default: Date.now }
 });
 
+const videoSchema = new mongoose.Schema({
+  id: { type: Number, required: true, unique: true },
+  thumb_url: { type: String, required: true },
+  file_url: { type: String, required: true },
+  description: { type: String },
+  music: { type: String, default: 'Original sound' },
+  likes_count: { type: Number, default: 0 },
+  comments_count: { type: Number, default: 0 },
+  shares_count: { type: Number, default: 0 },
+  created_at: { type: Date, default: Date.now }
+});
+
 // Ensure uniqueness per user-video
 watchHistorySchema.index({ user_id: 1, video_id: 1 }, { unique: true });
 
 export const User = mongoose.model('User', userSchema);
 export const WatchHistory = mongoose.model('WatchHistory', watchHistorySchema);
+export const Video = mongoose.model('Video', videoSchema);
 
 let isConnected = false;
 

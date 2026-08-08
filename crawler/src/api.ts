@@ -5,8 +5,6 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { loadConfig } from './config';
-import { GoogleSheetsAdapter } from './adapters/google-sheets/adapter';
 import { connectDb, User, WatchHistory } from './db';
 
 const app = express();
@@ -34,8 +32,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-const config = loadConfig();
-const db = new GoogleSheetsAdapter(config.sheets.spreadsheetId);
+// --- MOCK VIDEOS FOR DEPLOYMENT ---
+const MOCK_VIDEOS = [
+  { id: '1', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1616469829581-73993eb86b02', title: 'Video 1', description: 'Hello world', likes: 100 },
+  { id: '2', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113', title: 'Video 2', description: 'Testing render deployment', likes: 250 }
+];
 
 // --- AUTH MIDDLEWARE ---
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
@@ -328,11 +329,10 @@ app.listen(port, async () => {
   
   try {
     await connectDb(); // Initialize MongoDB
-    await db.connect();
-    console.log(`[API] Connected to Google Sheets`);
+    console.log(`[API] Connected to MongoDB`);
     
     // Initial fetch to prime the cache
-    const { items } = await db.findVideos({ limit: 100 });
+    const items = MOCK_VIDEOS;
     cachedVideos = items.map(v => ({
       id: parseInt(v.id) || Math.random(),
       thumb_url: v.thumbnailUrl,
