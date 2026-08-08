@@ -61,6 +61,12 @@ const VideoCard = ({ video }) => {
     };
   }, [inView, video.id, user]);
 
+  useEffect(() => {
+    if (retryCount > 0 && videoRef.current && inView) {
+      videoRef.current.play().catch(e => console.log('Autoplay blocked after retry', e));
+    }
+  }, [retryCount, inView, resolvedMp4Url]);
+
   const iframeRef = useRef(null);
 
   // Phân loại Link Video
@@ -327,6 +333,7 @@ const VideoCard = ({ video }) => {
               onClick={(e) => {
                 e.stopPropagation();
                 setRetryCount(prev => prev + 1);
+                setResolvedMp4Url(null); // Force re-fetch of the MP4 URL
                 setUseEmbedFallback(false);
               }}
             >
