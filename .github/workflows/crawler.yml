@@ -30,7 +30,7 @@ jobs:
       - name: Run Crawler
         working-directory: ./crawler
         env:
-          GOOGLE_SHEETS_SPREADSHEET_ID: '1UPqruSLiYDC6Jr_tyhHaxH2M8jAUxZPGsNecdisbQ_E'
+          GOOGLE_SHEETS_SPREADSHEET_ID: '13CXE7Z_Trz05WdT9Fy_usqyhen18sx46Lv4RorfLYlU'
           CRAWLER_ENABLED: 'true'
           MAX_PAGES_PER_RUN: '20'
           DEFAULT_CRAWL_INTERVAL: '1800'
