@@ -16,6 +16,7 @@ const VideoCard = ({ video }) => {
   const [resolvedMp4Url, setResolvedMp4Url] = useState(null);
   const [useEmbedFallback, setUseEmbedFallback] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const videoRef = useRef(null);
   const bgVideoRef = useRef(null);
   const hasMarkedSeen = useRef(false);
@@ -330,20 +331,30 @@ const VideoCard = ({ video }) => {
             <span style={{ fontSize: '16px' }}>Video bị chặn hoặc không tìm thấy (CORS)</span>
             <button 
               className="retry-btn"
-              style={{ padding: '8px 24px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-              onClick={(e) => {
+              disabled={isRetrying}
+              style={{ padding: '8px 24px', background: isRetrying ? '#555' : 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: isRetrying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              onClick={async (e) => {
                 e.stopPropagation();
-                // Thay đổi retryCount thành timestamp để chắc chắn bypass cache 100%
-                setRetryCount(Date.now());
-                setResolvedMp4Url(null); // Force re-fetch of the MP4 URL
+                if (isRetrying || !finalMp4Url) return;
                 
-                // Đợi 500ms cho extension (Allow CORS) khởi động xong rồi mới tải lại
+                setIsRetrying(true);
+                setRetryCount(Date.now());
+                
+                try {
+                  // Gửi request HEAD kèm cache: 'reload' để ép Chrome tải lại và đè lên cache bị lỗi CORS cũ
+                  await fetch(finalMp4Url, { method: 'HEAD', cache: 'reload' });
+                } catch (err) {
+                  console.log("Fetch cache bypass failed, proceeding anyway", err);
+                }
+
+                // Đợi thêm 1 chút để đảm bảo cache trình duyệt được cập nhật
                 setTimeout(() => {
                   setUseEmbedFallback(false);
-                }, 500);
+                  setIsRetrying(false);
+                }, 300);
               }}
             >
-              Tải lại video
+              {isRetrying ? 'Đang tải lại...' : 'Tải lại video'}
             </button>
           </div>
         )}
