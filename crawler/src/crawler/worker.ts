@@ -64,14 +64,15 @@ export class Worker {
       let browser;
       try {
         browser = await chromium.connectOverCDP('http://localhost:9222');
+        console.log('[Worker] Đã kết nối với Chrome đang chạy ở port 9222.');
       } catch (e) {
-        console.log('[Worker] ❌ KHÔNG TÌM THẤY CHROME!');
-        console.log('[Worker] Vui lòng chạy file start_browser.bat ngoài màn hình Desktop TRƯỚC KHI chạy crawl.bat!');
-        return { pageId: page.id, status: 'failed', videosFound: 0, newCount: 0, duplicateCount: 0 };
+        console.log('[Worker] Không tìm thấy Chrome ở port 9222. Đang khởi chạy trình duyệt nội bộ ẩn (Headless)...');
+        // Fallback cho môi trường server / Github Actions
+        browser = await chromium.launch({ headless: true });
       }
       
-      const browserContext = browser.contexts()[0];
-      const browserPage = browserContext.pages()[0] || await browserContext.newPage();
+      const browserContext = browser.contexts().length > 0 ? browser.contexts()[0] : await browser.newContext();
+      const browserPage = browserContext.pages().length > 0 ? browserContext.pages()[0] : await browserContext.newPage();
       
       let body = '';
       let statusCode = 200;
