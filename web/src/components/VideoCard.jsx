@@ -210,7 +210,7 @@ const VideoCard = ({ video }) => {
       window.removeEventListener('syncvolume', handleGlobalVolumeChange);
       clearTimeout(timeoutId);
     };
-  }, [calculateDimensions]);
+  }, []);
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
