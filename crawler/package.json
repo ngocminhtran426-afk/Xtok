@@ -7,7 +7,7 @@
     "auth": "tsx src/auth.ts",
     "api": "tsx watch src/api.ts",
     "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "start": "tsx src/api.ts",
     "build": "tsc",
     "test": "jest --config jest.config.js"
   },

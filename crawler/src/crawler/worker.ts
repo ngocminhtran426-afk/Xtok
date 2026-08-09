@@ -216,7 +216,7 @@ export class Worker {
            await new Promise(r => setTimeout(r, 10000));
         }
       }
-      console.log(`[Worker] Found ${normalizedVideos.length} videos on page ${page.id}`);
+      console.log(`[Worker] Finished processing page ${page.id}`);
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

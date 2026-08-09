@@ -6,7 +6,11 @@ import { CrawlerConfig } from '../config/crawler.config';
 export class GenericParser implements SourceParser {
   name = 'GenericParser';
   
-  parse(html: string, sourceUrl: string): NormalizedVideo[] {
+  canHandle(url: string): boolean {
+    return true; // Generic parser handles everything configured in CrawlerConfig
+  }
+  
+  parse(html: string, sourceUrl: string): { videos: NormalizedVideo[]; nextPageUrl?: string } {
     const $ = cheerio.load(html);
     const videos: NormalizedVideo[] = [];
     const selectors = CrawlerConfig.Selectors;

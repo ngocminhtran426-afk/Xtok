@@ -43,6 +43,9 @@ function generateFemaleProfile(seedStr: string) {
   };
 }
 
+const app = express();
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-2026';
+
 // Proxy avatar endpoint to avoid client-side rate limiting
 const avatarCache = new Map<string, string>();
 app.get('/api/avatar/:seed', async (req, res) => {
@@ -50,6 +53,7 @@ app.get('/api/avatar/:seed', async (req, res) => {
     const seed = req.params.seed;
     if (avatarCache.has(seed)) {
       res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
       return res.send(avatarCache.get(seed));
     }
     
@@ -69,14 +73,11 @@ app.get('/api/avatar/:seed', async (req, res) => {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Lưu cache 1 năm trên trình duyệt người dùng
     res.send(svg);
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Avatar proxy error:', error);
     res.status(500).send('Error generating avatar');
   }
 });
-
-const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-2026';
 const port = process.env.PORT || 4000;
 
 app.use(cors());
@@ -189,7 +190,7 @@ app.get('/api/videos', requireAuth, async (req, res) => {
         }
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Error fetching feed:', error);
     res.status(500).json({ error: 'Failed to fetch feed' });
   }
@@ -215,7 +216,7 @@ app.get('/api/videos/resolve/:id', async (req, res) => {
     } else {
       res.status(404).json({ error: 'MP4 URL not found' });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Resolve error:', error);
     res.status(500).json({ error: 'Failed to resolve video' });
   }
@@ -267,7 +268,7 @@ app.get('/api/videos/history', requireAuth, async (req, res) => {
       .filter(v => v !== undefined);
       
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Error fetching history:', error);
     res.status(500).json({ error: 'Failed to fetch history' });
   }
@@ -287,7 +288,7 @@ app.post('/api/videos/seen', requireAuth, async (req, res) => {
     );
     console.log(`[API] Marked video ${video_id} as seen by user ${userId}`);
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Error saving watch history:', error);
     res.status(500).json({ error: 'Failed to save watch history' });
   }
@@ -310,7 +311,7 @@ app.get('/api/ping-db', async (req, res) => {
       sheetCount,
       cachedCount: cachedVideos.length
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: error.toString() });
   }
 });
@@ -331,7 +332,7 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '7d' }
     );
     res.json({ token, user: { id: user._id, username: user.username, role: user.role, avatar_url: user.avatar_url } });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -341,7 +342,7 @@ app.get('/api/users/top', requireAuth, async (req, res) => {
   try {
     const users = await User.find().sort({ _id: 1 }).limit(3).select('_id username avatar_url');
     res.json(users.map(u => ({ id: u._id, username: u.username, avatar_url: u.avatar_url })));
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch top users' });
   }
 });
@@ -380,7 +381,7 @@ app.put('/api/users/:id', requireAuth, requireAdmin, async (req, res) => {
       await User.findByIdAndUpdate(id, { role });
     }
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
@@ -393,7 +394,7 @@ app.delete('/api/users/:id', requireAuth, requireAdmin, async (req, res) => {
     
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ error: 'Failed to delete user' });
   }
 });
@@ -413,7 +414,7 @@ app.post('/api/users/me/avatar', requireAuth, upload.single('avatar'), async (re
     await User.findByIdAndUpdate(userId, { avatar_url });
 
     res.json({ success: true, avatar_url });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Error uploading avatar:', error);
     res.status(500).json({ error: 'Failed to upload avatar' });
   }
