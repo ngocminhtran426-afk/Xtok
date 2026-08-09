@@ -231,7 +231,6 @@ button {
 .video-wrapper {
   position: relative;
   /* Width and height are now calculated dynamically in JS for native videos */
-  max-width: 1000px;
   background-color: #000;
   border-radius: 12px;
   overflow: hidden;
