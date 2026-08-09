@@ -146,44 +146,31 @@ const VideoCard = ({ video }) => {
     }
   };
 
-  // TÍNH KÍCH THƯỚC KHUNG VIDEO NGAY TỪ ĐẦU (giống TikTok)
-  // Lấy độ phân giải từ ảnh thumbnail để giãn khung trước, tránh bị giật chớp (Layout Shift) khi video load xong
   const [videoStyles, setVideoStyles] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+
+  const calculateDimensions = React.useCallback((width, height) => {
+    const maxH = window.innerHeight - 32;
+    const availableW = window.innerWidth - 350; 
+    const maxW = Math.max(300, availableW);
+    
+    let targetW = maxW;
+    let targetH = targetW * (height / width);
+    
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * (width / height);
+    }
+    setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+    setIsReady(true);
+  }, []);
 
   useEffect(() => {
-    // Tính toán kích thước ngay từ ảnh thumbnail
-    let vw = 720;
-    let vh = 1280;
-
-    const applyStyles = (width, height) => {
-      const maxH = window.innerHeight - 32;
-      // Dành không gian cho Sidebar (240px) và Nút thả tim (khoảng 100px)
-      const availableW = window.innerWidth - 350; 
-      const maxW = Math.max(300, availableW); // Bỏ giới hạn 1000px để video to hết cỡ
-      
-      let targetW = maxW;
-      let targetH = targetW * (height / width);
-      
-      if (targetH > maxH) {
-        targetH = maxH;
-        targetW = targetH * (width / height);
-      }
-      setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-    };
-
-    if (video.thumb_url) {
-      const img = new window.Image();
-      img.onload = () => {
-        applyStyles(img.naturalWidth || vw, img.naturalHeight || vh);
-      };
-      img.onerror = () => {
-        applyStyles(vw, vh); // Fallback
-      };
-      img.src = video.thumb_url;
-    } else {
-      applyStyles(vw, vh);
+    // Nếu là Webview/Iframe thì không có metadata, fallback về 9:16
+    if (isTiktok || useEmbedFallback) {
+      calculateDimensions(720, 1280);
     }
-  }, [video.thumb_url]);
+  }, [isTiktok, useEmbedFallback, calculateDimensions]);
 
   useEffect(() => {
     let timeoutId;
@@ -215,6 +202,7 @@ const VideoCard = ({ video }) => {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      calculateDimensions(videoRef.current.videoWidth || 720, videoRef.current.videoHeight || 1280);
     }
   };
 
@@ -291,22 +279,15 @@ const VideoCard = ({ video }) => {
     setVolume(newVol);
   };
 
-  if (!videoStyles) {
-    return (
-      <div className="video-card-container">
-        <div className="video-wrapper" style={{ width: '400px', height: 'calc(100vh - 32px)', backgroundColor: '#111', borderRadius: '12px', overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute', top: '-10%', left: '-10%', right: '-10%', bottom: '-10%',
-            backgroundImage: `url(${video.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(30px)', opacity: 0.4
-          }} />
-        </div>
-      </div>
-    );
-  }
+  // Ẩn nội dung chờ lấy được video metadata thật để không bị layout shift
+  const currentStyles = videoStyles || { width: '400px', height: 'calc(100vh - 32px)' };
 
   return (
     <div className="video-card-container" ref={ref}>
-      <div className="video-wrapper" style={{ ...videoStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
+      <div 
+        className="video-wrapper" 
+        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', opacity: isReady ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
+      >
         {/* Lớp nền mờ giống hệt Tiktok Web */}
         <div 
           style={{
@@ -345,6 +326,7 @@ const VideoCard = ({ video }) => {
                 ref={videoRef}
                 src={finalMp4Url}
                 className="video-element"
+                preload="metadata"
                 loop
                 muted={isMuted}
                 autoPlay
@@ -352,6 +334,7 @@ const VideoCard = ({ video }) => {
                 onClick={togglePlay}
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
+                style={{ position: 'relative', zIndex: 1 }}
                 onError={() => {
                   console.log("MP4 load failed, falling back to embed player");
                   setUseEmbedFallback(true);
@@ -442,8 +425,8 @@ const VideoCard = ({ video }) => {
         </div>
       </div>
 
-      {/* Floating Actions on the right (Outside wrapper for desktop layout) */}
-      <div className="floating-actions">
+      {/* Floating Actions (Right Side) */}
+      <div className="floating-actions" style={{ opacity: isReady ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}>
         <div className="action-avatar">
           <img src={video.user.avatar} alt="avatar" />
           <div className="follow-btn"><Plus size={12} color="white"/></div>
