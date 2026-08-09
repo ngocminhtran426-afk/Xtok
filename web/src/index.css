@@ -150,16 +150,42 @@ button {
   margin: 16px 8px;
 }
 
+/* Menu Toggle Button */
+.menu-toggle-btn {
+  color: var(--text-primary);
+  padding: 4px;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.menu-toggle-btn.floating {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  background: rgba(0, 0, 0, 0.4); /* Dark background so it's visible over videos */
+  padding: 8px;
+}
+.menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Sidebar Collapsed State */
 .sidebar.collapsed {
-  width: 48px;
+  width: 0;
+  padding: 0;
   border-right: none;
   background-color: transparent;
   transition: width 0.3s ease, background-color 0.3s ease;
+  overflow: visible; /* Cho phép nút menu lơ lửng bên ngoài */
 }
 .sidebar:not(.collapsed) {
   transition: width 0.3s ease, background-color 0.3s ease;
 }
+.sidebar.collapsed .sidebar-header-wrapper,
 .sidebar.collapsed .sidebar-logo,
 .sidebar.collapsed .sidebar-search,
 .sidebar.collapsed .sidebar-item,
