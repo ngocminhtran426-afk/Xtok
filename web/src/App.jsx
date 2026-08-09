@@ -21,13 +21,18 @@ const PrivateRoute = ({ children, requireAdmin = false }) => {
   return children;
 };
 
+import MobileNav from './components/MobileNav';
+import MobileHeader from './components/MobileHeader';
+
 const MainLayout = () => (
   <div className="app-container">
+    <MobileHeader />
     <Header />
     <div className="main-content">
       <Sidebar />
       <VideoFeed />
     </div>
+    <MobileNav />
   </div>
 );
 

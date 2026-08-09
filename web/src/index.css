@@ -1,3 +1,5 @@
+@import './mobile.css';
+
 :root {
   --bg-color: #121212;
   --text-primary: #ffffff;

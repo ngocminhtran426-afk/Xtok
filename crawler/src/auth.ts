@@ -11,7 +11,10 @@ import { createServer } from 'http';
 
 const CREDENTIALS_PATH = resolve(__dirname, '../credentials.json');
 const TOKEN_PATH = resolve(__dirname, '../token.json');
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/drive.file'
+];
 const PORT = 3333;
 
 async function authorize() {
