@@ -8,6 +8,13 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import { connectDb, User, WatchHistory } from './db';
 import { GoogleSheetsAdapter } from './adapters/google-sheets/adapter';
+import { chromium, Browser, BrowserContext } from 'playwright-extra';
+import stealthPlugin from 'puppeteer-extra-plugin-stealth';
+
+chromium.use(stealthPlugin());
+
+let globalBrowser: Browser | null = null;
+let globalContext: BrowserContext | null = null;
 
 // Helper: Seeded Random Female Vietnamese Name Generator
 function generateFemaleProfile(seedStr: string) {
@@ -202,19 +209,42 @@ app.get('/api/videos/resolve/:id', async (req, res) => {
     const mainDomain = 'https://xnhau.ink';
     const embedUrl = `${mainDomain}/embed/${id}`;
     
-    const response = await fetch(embedUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    if (!globalContext) {
+      return res.status(500).json({ error: 'Browser not initialized for Cloudflare bypass' });
+    }
+
+    const page = await globalContext.newPage();
+    
+    try {
+      await page.goto(embedUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      
+      // Wait for the video element or mp4 link up to 20 seconds. 
+      // This gives the user time to click the Cloudflare captcha if needed.
+      await page.waitForSelector('video, source', { timeout: 25000 });
+      
+      const html = await page.content();
+      const match = html.match(/https:\/\/[^"']*\.mp4/);
+      
+      if (match) {
+        res.json({ url: match[0] });
+      } else {
+        const videoElem = await page.$('video source') || await page.$('video');
+        if (videoElem) {
+          const src = await videoElem.getAttribute('src');
+          if (src) {
+             res.json({ url: src });
+          } else {
+             res.status(404).json({ error: 'MP4 URL not found in tag' });
+          }
+        } else {
+          res.status(404).json({ error: 'MP4 URL not found' });
+        }
       }
-    });
-    
-    const html = await response.text();
-    const match = html.match(/https:\/\/[^"']*\.mp4/);
-    
-    if (match) {
-      res.json({ url: match[0] });
-    } else {
-      res.status(404).json({ error: 'MP4 URL not found' });
+    } catch (e: any) {
+      console.error('[API] Playwright resolve timeout/error:', e.message);
+      res.status(500).json({ error: 'Timeout waiting for video' });
+    } finally {
+      await page.close();
     }
   } catch (error: any) {
     console.error('[API] Resolve error:', error);
@@ -470,6 +500,20 @@ app.listen(Number(port), '0.0.0.0', async () => {
     }));
     lastFetchTime = Date.now();
     console.log(`[API] Cache primed with ${items.length} videos`);
+    
+    try {
+      globalBrowser = await chromium.launch({ 
+        headless: false, // Hiển thị giao diện để người dùng có thể pass captcha lần đầu
+        args: ['--disable-blink-features=AutomationControlled']
+      });
+      globalContext = await globalBrowser.newContext({
+        viewport: { width: 1280, height: 720 },
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      });
+      console.log(`[API] Playwright browser initialized for bypassing Cloudflare`);
+    } catch (e) {
+      console.error(`[API] Failed to init Playwright:`, e);
+    }
   } catch (error) {
     console.error(`[API] Failed to connect to DB or Sheets:`, error);
   }
