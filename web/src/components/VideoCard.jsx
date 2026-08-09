@@ -148,70 +148,41 @@ const VideoCard = ({ video }) => {
 
   // TÍNH KÍCH THƯỚC KHUNG VIDEO NGAY TỪ ĐẦU (giống TikTok)
   // Lấy độ phân giải từ API trả về để set khung ngay lập tức, tránh bị giật chớp (Layout Shift) khi video load xong
-  // Tính kích thước khung video từ ảnh THUMBNAIL trước khi render
-  // Điều này đảm bảo khung video và các nút luôn nằm đúng vị trí ngay từ đầu, ko bị chạy tới chạy lui.
+  // TikTok Web UI: Khung video luôn cố định tỷ lệ 9:16 (hoặc vừa màn hình).
+  // Background sẽ là ảnh thumbnail làm mờ (nền nhạc màu) để video không bị lọt thỏm trong hộp đen.
   const [videoStyles, setVideoStyles] = useState(null);
 
-  const calculateDimensions = React.useCallback(() => {
-    if (!videoStyles) return; // Bỏ qua nếu chưa có kích thước ban đầu
-    const vw = parseFloat(videoStyles.width) || 720;
-    const vh = parseFloat(videoStyles.height) || 1280;
-    
-    const maxH = window.innerHeight - 32;
-    const availableW = window.innerWidth - 350; 
-    const maxW = Math.max(300, Math.min(1000, availableW));
-    
-    let targetW = maxW;
-    let targetH = targetW * (vh / vw);
-    
-    if (targetH > maxH) {
-      targetH = maxH;
-      targetW = targetH * (vw / vh);
-    }
-    // Không cần setState nếu kích thước không đổi để tránh re-render
-  }, [videoStyles]);
-
   useEffect(() => {
-    // Tính toán kích thước ngay từ ảnh thumbnail
-    let vw = 720;
-    let vh = 1280;
-
-    const applyStyles = (width, height) => {
-      const maxH = window.innerHeight - 32;
-      const availableW = window.innerWidth - 350; 
-      const maxW = Math.max(300, Math.min(1000, availableW));
-      
-      let targetW = maxW;
-      let targetH = targetW * (height / width);
-      
-      if (targetH > maxH) {
-        targetH = maxH;
-        targetW = targetH * (width / height);
-      }
-      setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-    };
-
-    if (video.thumb_url) {
-      const img = new window.Image();
-      img.onload = () => {
-        applyStyles(img.naturalWidth || vw, img.naturalHeight || vh);
-      };
-      img.onerror = () => {
-        applyStyles(vw, vh); // Fallback
-      };
-      img.src = video.thumb_url;
-    } else {
-      applyStyles(vw, vh);
+    // Luôn khóa cứng tỷ lệ khung hình giống hệt TikTok Web (cỡ dọc điện thoại)
+    const maxH = window.innerHeight - 32;
+    let targetH = maxH;
+    let targetW = targetH * (9 / 16);
+    
+    // Nếu màn hình quá hẹp, bóp theo chiều ngang
+    const availableW = window.innerWidth - 350;
+    if (targetW > availableW) {
+      targetW = availableW;
+      targetH = targetW * (16 / 9);
     }
-  }, [video.thumb_url]);
+    
+    setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+  }, []);
 
   useEffect(() => {
     let timeoutId;
     const handleResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        calculateDimensions();
-      }, 100); // 100ms debounce
+        const maxH = window.innerHeight - 32;
+        let targetH = maxH;
+        let targetW = targetH * (9 / 16);
+        const availableW = window.innerWidth - 350;
+        if (targetW > availableW) {
+          targetW = availableW;
+          targetH = targetW * (16 / 9);
+        }
+        setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+      }, 100);
     };
     
     window.addEventListener('resize', handleResize);
@@ -238,7 +209,6 @@ const VideoCard = ({ video }) => {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
-      calculateDimensions();
     }
   };
 
@@ -315,12 +285,14 @@ const VideoCard = ({ video }) => {
     setVolume(newVol);
   };
 
-  // Màn hình chờ (Placeholder) giống TikTok khi mạng lag
   if (!videoStyles) {
     return (
       <div className="video-card-container">
-        <div className="video-wrapper" style={{ width: '400px', height: 'calc(100vh - 32px)', backgroundColor: '#111', borderRadius: '12px' }}>
-          {/* Nền màu trơn chờ load */}
+        <div className="video-wrapper" style={{ width: '400px', height: 'calc(100vh - 32px)', backgroundColor: '#111', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{
+            position: 'absolute', top: '-10%', left: '-10%', right: '-10%', bottom: '-10%',
+            backgroundImage: `url(${video.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(30px)', opacity: 0.4
+          }} />
         </div>
       </div>
     );
@@ -328,14 +300,17 @@ const VideoCard = ({ video }) => {
 
   return (
     <div className="video-card-container" ref={ref}>
-      <div 
-        className={`video-wrapper ${isTiktok || useEmbedFallback ? 'is-webview' : 'native-video'}`}
-        style={(!isTiktok && !useEmbedFallback) ? videoStyles : {}}
-      >
+      <div className="video-wrapper" style={{ ...videoStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
+        {/* Lớp nền mờ giống hệt Tiktok Web */}
+        <div 
+          style={{
+            position: 'absolute', top: '-10%', left: '-10%', right: '-10%', bottom: '-10%',
+            backgroundImage: `url(${video.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(30px)', opacity: 0.4, zIndex: 0
+          }}
+        />
+
         {isTiktok || (useEmbedFallback && embedSrc) ? (
           <div className="webview-container" style={{ 
-            backgroundImage: `url(${video.thumb_url})`, 
-            backgroundSize: 'cover', 
             backgroundPosition: 'center' 
           }}>
             {inView ? (
