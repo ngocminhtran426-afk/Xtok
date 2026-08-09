@@ -67,6 +67,7 @@ app.get('/api/avatar/:seed', async (req, res) => {
     avatarCache.set(seed, svg);
     
     res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Lưu cache 1 năm trên trình duyệt người dùng
     res.send(svg);
   } catch (error) {
     console.error('[API] Avatar proxy error:', error);
