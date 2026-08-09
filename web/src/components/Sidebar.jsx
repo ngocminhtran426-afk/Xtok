@@ -28,7 +28,7 @@ const Sidebar = () => {
         </button>
         <div className="sidebar-header-wrapper" style={{ display: 'flex', alignItems: 'center' }}>
           <div className="sidebar-logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: 0, margin: 0 }} onClick={() => window.location.href = '/'}>
-            <img src="/logo.png" alt="XTok Logo" style={{ height: '32px', borderRadius: '8px' }} />
+            <img src="/logo.png" alt="XTok Logo" style={{ height: '32px' }} />
             <span style={{ fontSize: '26px', fontWeight: '800', letterSpacing: '-0.5px', lineHeight: 1 }}>XTok</span>
           </div>
         </div>
