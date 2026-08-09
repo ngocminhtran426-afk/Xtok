@@ -150,8 +150,8 @@ const VideoCard = ({ video }) => {
   const [isReady, setIsReady] = useState(false);
 
   const calculateDimensions = React.useCallback((width, height) => {
-    const maxH = window.innerHeight - 130; // Tiếp tục tăng viền trên dưới để nhỏ lại thêm
-    const availableW = window.innerWidth - 550; // Tiếp tục tăng viền 2 bên để nhỏ lại thêm
+    const maxH = window.innerHeight - 32; // Khôi phục chiều cao tối đa để video dọc full màn hình
+    const availableW = window.innerWidth - 550; // Giữ nguyên việc bóp chiều ngang để video ngang nhỏ lại
     const maxW = Math.max(300, availableW);
     
     let targetW = maxW;
