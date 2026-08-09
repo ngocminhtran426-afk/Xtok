@@ -9,6 +9,40 @@ import mongoose from 'mongoose';
 import { connectDb, User, WatchHistory } from './db';
 import { GoogleSheetsAdapter } from './adapters/google-sheets/adapter';
 
+// Helper: Seeded Random Female Vietnamese Name Generator
+function generateFemaleProfile(seedStr: string) {
+  const surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
+  const middleNames = ["Thị", "Ngọc", "Thảo", "Thu", "Mai", "Thanh", "Bích", "Hồng", "Kim", "Lan", "Như", "Phương", "Quỳnh", "Thùy", "Tuyết", "Yến", "Diễm", "Kiều", "Minh", "Bảo", "Trúc", "Uyển", "Tú"];
+  const givenNames = ["Anh", "Châm", "Dung", "Đan", "Giang", "Hà", "Hân", "Hoa", "Hương", "Hằng", "Khuê", "Lan", "Linh", "Ly", "Mai", "Nga", "Ngọc", "Nhi", "Nhung", "Oanh", "Quyên", "Tâm", "Thảo", "Thư", "Thủy", "Tiên", "Trâm", "Trang", "Trinh", "Tú", "Uyên", "Vân", "Vy", "Yến", "My", "Mi", "Diệp", "An", "Châu", "Mỹ", "My", "Trà", "Khánh", "Hân", "Đan"];
+  const avatars = [
+    "https://i.pravatar.cc/150?img=1", "https://i.pravatar.cc/150?img=5", "https://i.pravatar.cc/150?img=9",
+    "https://i.pravatar.cc/150?img=10", "https://i.pravatar.cc/150?img=16", "https://i.pravatar.cc/150?img=20",
+    "https://i.pravatar.cc/150?img=24", "https://i.pravatar.cc/150?img=26", "https://i.pravatar.cc/150?img=28",
+    "https://i.pravatar.cc/150?img=30", "https://i.pravatar.cc/150?img=32", "https://i.pravatar.cc/150?img=34"
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = seedStr.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const random = (max: number) => {
+    const x = Math.sin(hash++) * 10000;
+    return Math.floor((x - Math.floor(x)) * max);
+  };
+
+  const surname = surnames[random(surnames.length)];
+  const middleName = middleNames[random(middleNames.length)];
+  const givenName = givenNames[random(givenNames.length)];
+  
+  return {
+    nickname: `${surname}${middleName}${givenName}`.toLowerCase(),
+    first_name: `${surname} ${middleName}`,
+    last_name: givenName,
+    avatar: avatars[random(avatars.length)]
+  };
+}
+
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-2026';
 const port = process.env.PORT || 4000;
@@ -91,15 +125,12 @@ app.get('/api/videos', requireAuth, async (req, res) => {
           }
         },
         user: {
-          id: 1,
-          nickname: 'VideoCrawler',
-          first_name: 'Video',
-          last_name: 'Crawler',
-          avatar: 'https://cdn-icons-png.flaticon.com/512/864/864685.png',
+          id: parseInt(v.id) || 1,
+          ...generateFemaleProfile(String(v.id || 'crawler')),
           tick: true,
-          bio: 'Auto crawled videos',
-          followers_count: 9999,
-          likes_count: 99999
+          bio: 'Vietnamese Creator',
+          followers_count: Math.floor(Math.random() * 50000) + 1000,
+          likes_count: Math.floor(Math.random() * 500000) + 5000
         }
       }));
       
@@ -184,7 +215,7 @@ app.get('/api/videos/history', requireAuth, async (req, res) => {
         comments_count: Math.floor(Math.random() * 1000),
         shares_count: Math.floor(Math.random() * 500),
         meta: { video: { resolution_x: 720, resolution_y: 1280 } },
-        user: { id: 1, nickname: 'VideoCrawler', first_name: 'Video', last_name: 'Crawler', avatar: 'https://cdn-icons-png.flaticon.com/512/864/864685.png', tick: true, bio: 'Auto crawled videos', followers_count: 9999, likes_count: 99999 }
+        user: { id: parseInt(v.id) || 1, ...generateFemaleProfile(String(v.id || 'crawler')), tick: true, bio: 'Vietnamese Creator', followers_count: 9999, likes_count: 99999 }
       }));
     }
 
@@ -396,15 +427,12 @@ app.listen(port, async () => {
         }
       },
       user: {
-        id: 1,
-        nickname: 'VideoCrawler',
-        first_name: 'Video',
-        last_name: 'Crawler',
-        avatar: 'https://cdn-icons-png.flaticon.com/512/864/864685.png',
+        id: parseInt(v.id) || 1,
+        ...generateFemaleProfile(String(v.id || 'crawler')),
         tick: true,
-        bio: 'Auto crawled videos',
-        followers_count: 9999,
-        likes_count: 99999
+        bio: 'Vietnamese Creator',
+        followers_count: Math.floor(Math.random() * 50000) + 1000,
+        likes_count: Math.floor(Math.random() * 500000) + 5000
       }
     }));
     lastFetchTime = Date.now();
