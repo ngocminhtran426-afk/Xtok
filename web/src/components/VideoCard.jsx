@@ -147,42 +147,48 @@ const VideoCard = ({ video }) => {
   };
 
   // TÍNH KÍCH THƯỚC KHUNG VIDEO NGAY TỪ ĐẦU (giống TikTok)
-  // Lấy độ phân giải từ API trả về để set khung ngay lập tức, tránh bị giật chớp (Layout Shift) khi video load xong
-  // TikTok Web UI: Khung video luôn cố định tỷ lệ 9:16 (hoặc vừa màn hình).
-  // Background sẽ là ảnh thumbnail làm mờ (nền nhạc màu) để video không bị lọt thỏm trong hộp đen.
+  // Lấy độ phân giải từ ảnh thumbnail để giãn khung trước, tránh bị giật chớp (Layout Shift) khi video load xong
   const [videoStyles, setVideoStyles] = useState(null);
 
   useEffect(() => {
-    // Luôn khóa cứng tỷ lệ khung hình giống hệt TikTok Web (cỡ dọc điện thoại)
-    const maxH = window.innerHeight - 32;
-    let targetH = maxH;
-    let targetW = targetH * (9 / 16);
-    
-    // Nếu màn hình quá hẹp, bóp theo chiều ngang
-    const availableW = window.innerWidth - 350;
-    if (targetW > availableW) {
-      targetW = availableW;
-      targetH = targetW * (16 / 9);
+    // Tính toán kích thước ngay từ ảnh thumbnail
+    let vw = 720;
+    let vh = 1280;
+
+    const applyStyles = (width, height) => {
+      const maxH = window.innerHeight - 32;
+      // Dành không gian cho Sidebar (240px) và Nút thả tim (khoảng 100px)
+      const availableW = window.innerWidth - 350; 
+      const maxW = Math.max(300, availableW); // Bỏ giới hạn 1000px để video to hết cỡ
+      
+      let targetW = maxW;
+      let targetH = targetW * (height / width);
+      
+      if (targetH > maxH) {
+        targetH = maxH;
+        targetW = targetH * (width / height);
+      }
+      setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+    };
+
+    if (video.thumb_url) {
+      const img = new window.Image();
+      img.onload = () => {
+        applyStyles(img.naturalWidth || vw, img.naturalHeight || vh);
+      };
+      img.onerror = () => {
+        applyStyles(vw, vh); // Fallback
+      };
+      img.src = video.thumb_url;
+    } else {
+      applyStyles(vw, vh);
     }
-    
-    setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-  }, []);
+  }, [video.thumb_url]);
 
   useEffect(() => {
     let timeoutId;
     const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        const maxH = window.innerHeight - 32;
-        let targetH = maxH;
-        let targetW = targetH * (9 / 16);
-        const availableW = window.innerWidth - 350;
-        if (targetW > availableW) {
-          targetW = availableW;
-          targetH = targetW * (16 / 9);
-        }
-        setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-      }, 100);
+      // Bỏ qua resize tạm thời, hoặc có thể reload
     };
     
     window.addEventListener('resize', handleResize);
