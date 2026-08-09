@@ -146,29 +146,58 @@ const VideoCard = ({ video }) => {
     }
   };
 
-  const [videoStyles, setVideoStyles] = useState({ width: 'auto', height: 'calc(100vh - 32px)' });
+  // TÍNH KÍCH THƯỚC KHUNG VIDEO NGAY TỪ ĐẦU (giống TikTok)
+  // Lấy độ phân giải từ API trả về để set khung ngay lập tức, tránh bị giật chớp (Layout Shift) khi video load xong
+  const [videoStyles, setVideoStyles] = useState(() => {
+    let vw = 720; // Mặc định 9:16
+    let vh = 1280;
+    if (video.meta?.video?.resolution_x && video.meta?.video?.resolution_y) {
+      vw = video.meta.video.resolution_x;
+      vh = video.meta.video.resolution_y;
+    }
+    const maxH = window.innerHeight - 32;
+    const availableW = window.innerWidth - 350; 
+    const maxW = Math.max(300, Math.min(1000, availableW));
+    
+    let targetW = maxW;
+    let targetH = targetW * (vh / vw);
+    
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * (vw / vh);
+    }
+    return { width: `${targetW}px`, height: `${targetH}px` };
+  });
 
   const calculateDimensions = React.useCallback(() => {
-    if (videoRef.current) {
-      const vw = videoRef.current.videoWidth;
-      const vh = videoRef.current.videoHeight;
-      if (vw && vh) {
-        const maxH = window.innerHeight - 32;
-        // Sidebar (240px) + Actions (~80px) + Padding (~30px) = 350px
-        const availableW = window.innerWidth - 350; 
-        const maxW = Math.max(300, Math.min(1000, availableW));
-        
-        let targetW = maxW;
-        let targetH = targetW * (vh / vw);
-        
-        if (targetH > maxH) {
-          targetH = maxH;
-          targetW = targetH * (vw / vh);
-        }
-        setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-      }
+    let vw = 720;
+    let vh = 1280;
+    
+    // Lấy kích thước thật nếu video đã load, nếu chưa thì lấy từ metadata (rất quan trọng)
+    if (videoRef.current && videoRef.current.videoWidth) {
+      vw = videoRef.current.videoWidth;
+      vh = videoRef.current.videoHeight;
+    } else if (video.meta?.video?.resolution_x) {
+      vw = video.meta.video.resolution_x;
+      vh = video.meta.video.resolution_y;
     }
-  }, []);
+
+    if (vw && vh) {
+      const maxH = window.innerHeight - 32;
+      // Sidebar (240px) + Actions (~80px) + Padding (~30px) = 350px
+      const availableW = window.innerWidth - 350; 
+      const maxW = Math.max(300, Math.min(1000, availableW));
+      
+      let targetW = maxW;
+      let targetH = targetW * (vh / vw);
+      
+      if (targetH > maxH) {
+        targetH = maxH;
+        targetW = targetH * (vw / vh);
+      }
+      setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+    }
+  }, [video.meta]);
 
   useEffect(() => {
     let timeoutId;
@@ -286,7 +315,11 @@ const VideoCard = ({ video }) => {
         style={(!isTiktok && !useEmbedFallback) ? videoStyles : {}}
       >
         {isTiktok || (useEmbedFallback && embedSrc) ? (
-          <div className="webview-container">
+          <div className="webview-container" style={{ 
+            backgroundImage: `url(${video.thumb_url})`, 
+            backgroundSize: 'cover', 
+            backgroundPosition: 'center' 
+          }}>
             {inView ? (
               <>
                 <iframe 
@@ -298,12 +331,15 @@ const VideoCard = ({ video }) => {
                 />
                 {isTiktok && <div className="click-overlay" onClick={togglePlay} />}
               </>
-            ) : (
-              <div style={{ width: '100%', height: '100%', backgroundColor: '#000' }} />
-            )}
+            ) : null}
           </div>
         ) : finalMp4Url && !useEmbedFallback ? (
-          <div className="video-element iframe-wrapper" style={{ position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="video-element iframe-wrapper" style={{ 
+            position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center',
+            backgroundImage: `url(${video.thumb_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}>
             {inView ? (
               <video 
                 key={retryCount}
@@ -322,9 +358,7 @@ const VideoCard = ({ video }) => {
                   setUseEmbedFallback(true);
                 }}
               />
-            ) : (
-              <div style={{ width: '100%', height: '100%', backgroundColor: '#000' }} />
-            )}
+            ) : null}
           </div>
         ) : (
           <div style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', gap: '12px' }}>
