@@ -149,55 +149,34 @@ const VideoCard = ({ video }) => {
   // TÍNH KÍCH THƯỚC KHUNG VIDEO NGAY TỪ ĐẦU (giống TikTok)
   // Lấy độ phân giải từ API trả về để set khung ngay lập tức, tránh bị giật chớp (Layout Shift) khi video load xong
   const [videoStyles, setVideoStyles] = useState(() => {
-    let vw = 720; // Mặc định 9:16
-    let vh = 1280;
-    if (video.meta?.video?.resolution_x && video.meta?.video?.resolution_y) {
-      vw = video.meta.video.resolution_x;
-      vh = video.meta.video.resolution_y;
-    }
     const maxH = window.innerHeight - 32;
     const availableW = window.innerWidth - 350; 
     const maxW = Math.max(300, Math.min(1000, availableW));
     
     let targetW = maxW;
-    let targetH = targetW * (vh / vw);
+    let targetH = targetW * (16 / 9); // Luôn ép tỷ lệ 9:16
     
     if (targetH > maxH) {
       targetH = maxH;
-      targetW = targetH * (vw / vh);
+      targetW = targetH * (9 / 16);
     }
     return { width: `${targetW}px`, height: `${targetH}px` };
   });
 
   const calculateDimensions = React.useCallback(() => {
-    let vw = 720;
-    let vh = 1280;
+    const maxH = window.innerHeight - 32;
+    const availableW = window.innerWidth - 350; 
+    const maxW = Math.max(300, Math.min(1000, availableW));
     
-    // Lấy kích thước thật nếu video đã load, nếu chưa thì lấy từ metadata (rất quan trọng)
-    if (videoRef.current && videoRef.current.videoWidth) {
-      vw = videoRef.current.videoWidth;
-      vh = videoRef.current.videoHeight;
-    } else if (video.meta?.video?.resolution_x) {
-      vw = video.meta.video.resolution_x;
-      vh = video.meta.video.resolution_y;
+    let targetW = maxW;
+    let targetH = targetW * (16 / 9); // Luôn ép tỷ lệ 9:16
+    
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * (9 / 16);
     }
-
-    if (vw && vh) {
-      const maxH = window.innerHeight - 32;
-      // Sidebar (240px) + Actions (~80px) + Padding (~30px) = 350px
-      const availableW = window.innerWidth - 350; 
-      const maxW = Math.max(300, Math.min(1000, availableW));
-      
-      let targetW = maxW;
-      let targetH = targetW * (vh / vw);
-      
-      if (targetH > maxH) {
-        targetH = maxH;
-        targetW = targetH * (vw / vh);
-      }
-      setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-    }
-  }, [video.meta]);
+    setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+  }, []);
 
   useEffect(() => {
     let timeoutId;
