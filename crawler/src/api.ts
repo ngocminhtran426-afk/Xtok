@@ -39,7 +39,7 @@ function generateFemaleProfile(seedStr: string) {
     nickname: `${surname} ${middleName} ${givenName}`,
     first_name: `${surname} ${middleName}`,
     last_name: givenName,
-    avatar: `https://api.dicebear.com/9.x/clay/svg?seed=${encodeURIComponent(seedStr)}`
+    avatar: `https://api.dicebear.com/10.x/clay/svg?seed=${encodeURIComponent(seedStr)}`
   };
 }
 
