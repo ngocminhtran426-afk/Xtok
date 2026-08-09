@@ -231,4 +231,9 @@
   .player-controls {
     display: none !important;
   }
+
+  /* Ẩn nút bấm cuộn lên xuống trên mobile */
+  .nav-buttons {
+    display: none !important;
+  }
 }

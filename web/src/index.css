@@ -150,6 +150,33 @@ button {
   margin: 16px 8px;
 }
 
+/* Sidebar Collapsed State */
+.sidebar.collapsed {
+  width: 72px;
+  transition: width 0.3s ease;
+}
+.sidebar:not(.collapsed) {
+  transition: width 0.3s ease;
+}
+.sidebar.collapsed .sidebar-logo span,
+.sidebar.collapsed .sidebar-search,
+.sidebar.collapsed .sidebar-item-text,
+.sidebar.collapsed .follow-title,
+.sidebar.collapsed .user-info-text {
+  display: none;
+}
+.sidebar.collapsed .sidebar-logo {
+  padding-left: 0;
+  justify-content: center;
+}
+.sidebar.collapsed .sidebar-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+.sidebar.collapsed .sidebar-item svg {
+  margin: 0;
+}
+
 /* Video Feed */
 .video-feed {
   flex-grow: 1;
