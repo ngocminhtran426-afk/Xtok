@@ -114,8 +114,12 @@ const VideoCard = ({ video }) => {
     if (videoId) {
       axios.get(`/api/videos/resolve/${videoId}`)
         .then(res => {
-          if (res.data.url) setResolvedMp4Url(res.data.url);
-          else setUseEmbedFallback(true);
+          if (res.data.url) {
+             // Pass through the backend proxy stream to bypass Cloudflare
+             setResolvedMp4Url(`/api/videos/stream?url=${encodeURIComponent(res.data.url)}`);
+          } else {
+             setUseEmbedFallback(true);
+          }
         })
         .catch(err => {
           console.error("Failed to resolve MP4 URL:", err);

@@ -252,6 +252,62 @@ app.get('/api/videos/resolve/:id', async (req, res) => {
   }
 });
 
+// Proxy video stream to bypass Cloudflare on frontend
+import https from 'https';
+
+app.get('/api/videos/stream', async (req, res) => {
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) return res.status(400).send('Missing url parameter');
+
+  try {
+    let cookieStr = '';
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    
+    if (globalContext) {
+      const cookies = await globalContext.cookies();
+      cookieStr = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+    }
+
+    const headers: Record<string, string> = {
+      'User-Agent': userAgent,
+      'Referer': 'https://xnhau.ink/',
+      'Accept': '*/*',
+    };
+    if (cookieStr) headers['Cookie'] = cookieStr;
+    
+    // Pass the range header from the frontend to support video seeking
+    if (req.headers.range) headers['Range'] = req.headers.range;
+
+    const proxyReq = https.get(targetUrl, { headers }, (proxyRes: any) => {
+      if (proxyRes.statusCode >= 400 && proxyRes.statusCode !== 416) {
+         console.error(`[Stream] Proxy got status ${proxyRes.statusCode} for ${targetUrl}`);
+      }
+      
+      // Filter out problematic headers that shouldn't be proxied blindly
+      const filteredHeaders = { ...proxyRes.headers };
+      delete filteredHeaders['connection'];
+      delete filteredHeaders['keep-alive'];
+      delete filteredHeaders['transfer-encoding'];
+      
+      res.writeHead(proxyRes.statusCode, filteredHeaders);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err: any) => {
+      console.error('[Stream] Proxy error:', err.message);
+      if (!res.headersSent) res.status(500).end();
+    });
+    
+    req.on('close', () => {
+      proxyReq.destroy(); // stop downloading if frontend aborts
+    });
+
+  } catch (err: any) {
+    console.error('[Stream] Setup error:', err.message);
+    if (!res.headersSent) res.status(500).end();
+  }
+});
+
 // --- WATCH HISTORY ENDPOINTS ---
 app.get('/api/videos/history', requireAuth, async (req, res) => {
   try {
