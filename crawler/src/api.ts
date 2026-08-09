@@ -36,7 +36,7 @@ function generateFemaleProfile(seedStr: string) {
   const givenName = givenNames[random(givenNames.length)];
   
   return {
-    nickname: `${surname}${middleName}${givenName}`.toLowerCase(),
+    nickname: `${surname} ${middleName} ${givenName}`,
     first_name: `${surname} ${middleName}`,
     last_name: givenName,
     avatar: avatars[random(avatars.length)]
