@@ -152,29 +152,20 @@ button {
 
 /* Sidebar Collapsed State */
 .sidebar.collapsed {
-  width: 72px;
-  transition: width 0.3s ease;
+  width: 48px;
+  border-right: none;
+  background-color: transparent;
+  transition: width 0.3s ease, background-color 0.3s ease;
 }
 .sidebar:not(.collapsed) {
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.3s ease;
 }
-.sidebar.collapsed .sidebar-logo span,
+.sidebar.collapsed .sidebar-logo,
 .sidebar.collapsed .sidebar-search,
-.sidebar.collapsed .sidebar-item-text,
-.sidebar.collapsed .follow-title,
-.sidebar.collapsed .user-info-text {
-  display: none;
-}
-.sidebar.collapsed .sidebar-logo {
-  padding-left: 0;
-  justify-content: center;
-}
-.sidebar.collapsed .sidebar-item {
-  justify-content: center;
-  padding: 12px 0;
-}
-.sidebar.collapsed .sidebar-item svg {
-  margin: 0;
+.sidebar.collapsed .sidebar-item,
+.sidebar.collapsed .sidebar-divider,
+.sidebar.collapsed .follow-title {
+  display: none !important;
 }
 
 /* Video Feed */
