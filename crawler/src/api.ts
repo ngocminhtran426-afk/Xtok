@@ -58,6 +58,12 @@ app.get('/api/avatar/:seed', async (req, res) => {
       throw new Error(`DiceBear API returned ${response.status}`);
     }
     const svg = await response.text();
+    
+    // Bảo vệ RAM: Nếu cache vượt quá 1000 ảnh (khoảng 5MB), xóa bớt để giải phóng bộ nhớ
+    if (avatarCache.size > 1000) {
+      avatarCache.clear();
+    }
+    
     avatarCache.set(seed, svg);
     
     res.setHeader('Content-Type', 'image/svg+xml');
