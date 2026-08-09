@@ -429,7 +429,7 @@ app.use((req, res) => {
   res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
-app.listen(port, async () => {
+app.listen(Number(port), '0.0.0.0', async () => {
   console.log(`===================================`);
   console.log(`  Video Platform API Server`);
   console.log(`===================================`);
