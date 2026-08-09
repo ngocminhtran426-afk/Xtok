@@ -148,35 +148,62 @@ const VideoCard = ({ video }) => {
 
   // TÍNH KÍCH THƯỚC KHUNG VIDEO NGAY TỪ ĐẦU (giống TikTok)
   // Lấy độ phân giải từ API trả về để set khung ngay lập tức, tránh bị giật chớp (Layout Shift) khi video load xong
-  const [videoStyles, setVideoStyles] = useState(() => {
-    const maxH = window.innerHeight - 32;
-    const availableW = window.innerWidth - 350; 
-    const maxW = Math.max(300, Math.min(1000, availableW));
-    
-    let targetW = maxW;
-    let targetH = targetW * (16 / 9); // Luôn ép tỷ lệ 9:16
-    
-    if (targetH > maxH) {
-      targetH = maxH;
-      targetW = targetH * (9 / 16);
-    }
-    return { width: `${targetW}px`, height: `${targetH}px` };
-  });
+  // Tính kích thước khung video từ ảnh THUMBNAIL trước khi render
+  // Điều này đảm bảo khung video và các nút luôn nằm đúng vị trí ngay từ đầu, ko bị chạy tới chạy lui.
+  const [videoStyles, setVideoStyles] = useState(null);
 
   const calculateDimensions = React.useCallback(() => {
+    if (!videoStyles) return; // Bỏ qua nếu chưa có kích thước ban đầu
+    const vw = parseFloat(videoStyles.width) || 720;
+    const vh = parseFloat(videoStyles.height) || 1280;
+    
     const maxH = window.innerHeight - 32;
     const availableW = window.innerWidth - 350; 
     const maxW = Math.max(300, Math.min(1000, availableW));
     
     let targetW = maxW;
-    let targetH = targetW * (16 / 9); // Luôn ép tỷ lệ 9:16
+    let targetH = targetW * (vh / vw);
     
     if (targetH > maxH) {
       targetH = maxH;
-      targetW = targetH * (9 / 16);
+      targetW = targetH * (vw / vh);
     }
-    setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-  }, []);
+    // Không cần setState nếu kích thước không đổi để tránh re-render
+  }, [videoStyles]);
+
+  useEffect(() => {
+    // Tính toán kích thước ngay từ ảnh thumbnail
+    let vw = 720;
+    let vh = 1280;
+
+    const applyStyles = (width, height) => {
+      const maxH = window.innerHeight - 32;
+      const availableW = window.innerWidth - 350; 
+      const maxW = Math.max(300, Math.min(1000, availableW));
+      
+      let targetW = maxW;
+      let targetH = targetW * (height / width);
+      
+      if (targetH > maxH) {
+        targetH = maxH;
+        targetW = targetH * (width / height);
+      }
+      setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
+    };
+
+    if (video.thumb_url) {
+      const img = new window.Image();
+      img.onload = () => {
+        applyStyles(img.naturalWidth || vw, img.naturalHeight || vh);
+      };
+      img.onerror = () => {
+        applyStyles(vw, vh); // Fallback
+      };
+      img.src = video.thumb_url;
+    } else {
+      applyStyles(vw, vh);
+    }
+  }, [video.thumb_url]);
 
   useEffect(() => {
     let timeoutId;
@@ -285,7 +312,19 @@ const VideoCard = ({ video }) => {
         setTimeout(() => clearInterval(tryPlay), 15000);
       })();
     `);
+    setVolume(newVol);
   };
+
+  // Màn hình chờ (Placeholder) giống TikTok khi mạng lag
+  if (!videoStyles) {
+    return (
+      <div className="video-card-container">
+        <div className="video-wrapper" style={{ width: '400px', height: 'calc(100vh - 32px)', backgroundColor: '#111', borderRadius: '12px' }}>
+          {/* Nền màu trơn chờ load */}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="video-card-container" ref={ref}>
