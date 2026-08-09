@@ -39,9 +39,34 @@ function generateFemaleProfile(seedStr: string) {
     nickname: `${surname} ${middleName} ${givenName}`,
     first_name: `${surname} ${middleName}`,
     last_name: givenName,
-    avatar: `https://api.dicebear.com/10.x/clay/svg?seed=${encodeURIComponent(seedStr)}`
+    avatar: `/api/avatar/${encodeURIComponent(seedStr)}`
   };
 }
+
+// Proxy avatar endpoint to avoid client-side rate limiting
+const avatarCache = new Map<string, string>();
+app.get('/api/avatar/:seed', async (req, res) => {
+  try {
+    const seed = req.params.seed;
+    if (avatarCache.has(seed)) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.send(avatarCache.get(seed));
+    }
+    
+    const response = await fetch(`https://api.dicebear.com/10.x/clay/svg?seed=${encodeURIComponent(seed)}`);
+    if (!response.ok) {
+      throw new Error(`DiceBear API returned ${response.status}`);
+    }
+    const svg = await response.text();
+    avatarCache.set(seed, svg);
+    
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(svg);
+  } catch (error) {
+    console.error('[API] Avatar proxy error:', error);
+    res.status(500).send('Error generating avatar');
+  }
+});
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-super-secret-key-2026';
