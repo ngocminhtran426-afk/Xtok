@@ -105,7 +105,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   // Fetch dynamic MP4 URL with token
   useEffect(() => {
     if (isTiktok || useEmbedFallback || rawMp4Url) return;
-    
     let videoId = null;
     if (video.file_url?.startsWith('xnhau:')) {
       videoId = video.file_url.split(':')[1];
@@ -114,32 +113,12 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       if (matchId) videoId = matchId[1];
     }
 
-    // Always use direct URL if it's xnhau
+    // We just use the embed iframe natively because KVS allows iframes
     if (videoId) {
-      const targetUrl = `https://xnhau.ink/embed/${videoId}`;
-      const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
-      
-      const handleMessage = (event) => {
-        if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
-          window.removeEventListener("message", handleMessage);
-          if (event.data.mp4Url) {
-            setResolvedMp4Url(event.data.mp4Url);
-          } else {
-            setResolvedMp4Url(fallbackUrl);
-          }
-        }
-      };
-      
-      window.addEventListener("message", handleMessage);
-      window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
-      
-      // Timeout fallback in case extension is not running
-      setTimeout(() => {
-        window.removeEventListener("message", handleMessage);
-        setResolvedMp4Url(prev => prev || fallbackUrl);
-      }, 3000);
+      setResolvedMp4Url(null);
+      setUseEmbedFallback(true);
     }
-  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url]);
+  }, [video.file_url, isTiktok]);
   
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
@@ -334,6 +313,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               onClick={() => {
                 setNeedsVerification(false);
                 setRetryCount(c => c + 1);
+                // Refresh iframe
+                if (iframeRef.current) {
+                  iframeRef.current.src = iframeRef.current.src;
+                }
               }}
               style={{ padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', outline: 'none' }}
             >
