@@ -62,7 +62,7 @@ function updateDynamicRule(cookieValue) {
     },
     condition: {
       urlFilter: 'xnhau',
-      resourceTypes: ['sub_frame', 'xmlhttprequest', 'media', 'main_frame']
+      resourceTypes: ['sub_frame', 'xmlhttprequest', 'media', 'main_frame', 'other']
     }
   };
 
@@ -85,7 +85,7 @@ function removeDynamicRule() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    fetch(request.url)
+    fetch(request.url, { credentials: 'omit' }) // DNR rule will append the correct cookie
       .then(res => res.text())
       .then(html => {
         const match = html.match(/https:\/\/[^"']*\.mp4/);
