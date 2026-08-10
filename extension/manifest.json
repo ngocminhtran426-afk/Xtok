@@ -11,7 +11,8 @@
   ],
   "host_permissions": [
     "*://*.xnhau.loan/*",
-    "*://*.xnhau.tech/*"
+    "*://*.xnhau.tech/*",
+    "*://*.xnhau.ink/*"
   ],
   "background": {
     "service_worker": "background.js"

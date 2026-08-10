@@ -13,11 +13,14 @@ chrome.storage.local.get(['cf_clearance'], (result) => {
 });
 
 function checkExistingCookies() {
-  chrome.cookies.getAll({ domain: 'xnhau.loan', name: 'cf_clearance' }, (cookies) => {
+  chrome.cookies.getAll({ name: 'cf_clearance' }, (cookies) => {
     if (cookies && cookies.length > 0) {
-      currentClearance = cookies[0].value;
-      chrome.storage.local.set({ cf_clearance: currentClearance });
-      updateDynamicRule(currentClearance);
+      const xnhauCookie = cookies.find(c => c.domain.includes('xnhau'));
+      if (xnhauCookie) {
+        currentClearance = xnhauCookie.value;
+        chrome.storage.local.set({ cf_clearance: currentClearance });
+        updateDynamicRule(currentClearance);
+      }
     }
   });
 }
