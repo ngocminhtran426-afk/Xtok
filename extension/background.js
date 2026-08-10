@@ -85,14 +85,16 @@ function removeDynamicRule() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    fetch(request.url, { credentials: 'omit' }) // DNR rule will append the correct cookie
+    fetch(request.url, { credentials: 'include' }) 
       .then(res => res.text())
       .then(html => {
+        chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
         const match = html.match(/https:\/\/[^"']*\.mp4/);
         sendResponse({ mp4Url: match ? match[0] : null });
       })
       .catch(err => {
         console.error(err);
+        chrome.storage.local.set({ debug_html: err.toString() });
         sendResponse({ mp4Url: null });
       });
     return true; // async

@@ -3,9 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnBypass = document.getElementById('btnBypass');
 
   function checkStatus() {
-    chrome.storage.local.get(['cf_clearance', 'debug_cookies'], (result) => {
-      if (result.cf_clearance) {
-        statusBox.textContent = 'Đã Kích Hoạt ✅';
+    chrome.storage.local.get(['cf_clearance', 'debug_cookies', 'debug_html'], (result) => {
+      if (result.cf_clearance || result.debug_cookies) {
+        statusBox.textContent = 'Đã Kích Hoạt ✅ (Cookies OK)';
         statusBox.className = 'status active';
       } else {
         statusBox.textContent = 'Chưa có thẻ bài ❌';
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const debugBox = document.getElementById('debugBox');
       if (debugBox) {
-        debugBox.textContent = 'Cookies found: ' + (result.debug_cookies || 'None');
+        debugBox.textContent = 'Cookies: ' + (result.debug_cookies || 'None') + '\n\nHTML: ' + (result.debug_html || 'None');
       }
     });
   }
