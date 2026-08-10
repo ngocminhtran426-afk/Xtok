@@ -116,8 +116,20 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
     // Always use direct URL if it's xnhau
     if (videoId) {
-      const directUrl = `https://xnhau.ink/video/${videoId}.mp4`;
-      setResolvedMp4Url(directUrl);
+      axios.get(`https://xnhau.ink/embed/${videoId}`)
+        .then(res => {
+          const html = res.data;
+          const match = html.match(/https:\/\/[^"']*\.mp4/);
+          if (match) {
+            setResolvedMp4Url(match[0]);
+          } else {
+            setResolvedMp4Url(`https://xnhau.ink/video/${videoId}.mp4`);
+          }
+        })
+        .catch(err => {
+          console.log('Failed to fetch embed html, falling back to direct url', err);
+          setResolvedMp4Url(`https://xnhau.ink/video/${videoId}.mp4`);
+        });
     }
   }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url]);
   
