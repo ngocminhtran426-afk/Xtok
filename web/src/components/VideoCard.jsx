@@ -105,6 +105,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   // Fetch dynamic MP4 URL with token
   useEffect(() => {
     if (isTiktok || useEmbedFallback || rawMp4Url) return;
+    
     let videoId = null;
     if (video.file_url?.startsWith('xnhau:')) {
       videoId = video.file_url.split(':')[1];
@@ -113,12 +114,33 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       if (matchId) videoId = matchId[1];
     }
 
-    // We just use the embed iframe natively because KVS allows iframes
     if (videoId) {
-      setResolvedMp4Url(null);
-      setUseEmbedFallback(true);
+      const targetUrl = `https://xnhau.ink/embed/${videoId}`;
+      const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
+      
+      const handleMessage = (event) => {
+        if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
+          window.removeEventListener("message", handleMessage);
+          if (event.data.error === "No xnhau tab open") {
+            setNeedsVerification(true);
+          } else if (event.data.mp4Url) {
+            setResolvedMp4Url(event.data.mp4Url);
+          } else {
+            setNeedsVerification(true);
+          }
+        }
+      };
+      
+      window.addEventListener("message", handleMessage);
+      window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
+      
+      // Timeout fallback in case extension is not running
+      setTimeout(() => {
+        window.removeEventListener("message", handleMessage);
+        setResolvedMp4Url(prev => prev || fallbackUrl);
+      }, 3000);
     }
-  }, [video.file_url, isTiktok]);
+  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url]);
   
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
@@ -296,7 +318,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '20px', textAlign: 'center' }}>
             <div style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>Cần xác minh bảo mật</div>
             <div style={{ marginBottom: '24px', fontSize: '14px', color: '#ccc', maxWidth: '300px', lineHeight: '1.5' }}>
-              Trang đích yêu cầu xác minh Captcha. Vui lòng nhấn nút bên dưới để mở trang xác minh (Popup). Sau khi xác minh xong, hãy đóng popup và nhấn Tải lại.
+              Trang đích yêu cầu xác minh Captcha. Vui lòng nhấn nút bên dưới để mở trang mồi ở Tab mới. <br/><br/>
+              <b>LƯU Ý QUAN TRỌNG:</b> Sau khi giải Captcha xong, <b>KHÔNG ĐƯỢC ĐÓNG TAB ĐÓ</b>. Hãy giữ Tab đó mở để Extension có thể làm trạm lấy link video.
             </div>
             <button 
               onClick={() => {
@@ -313,14 +336,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               onClick={() => {
                 setNeedsVerification(false);
                 setRetryCount(c => c + 1);
-                // Refresh iframe
-                if (iframeRef.current) {
-                  iframeRef.current.src = iframeRef.current.src;
-                }
               }}
               style={{ padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', outline: 'none' }}
             >
-              Tôi đã xác minh xong, Tải lại
+              Đã mở và giải Captcha, Tải lại
             </button>
           </div>
         )}

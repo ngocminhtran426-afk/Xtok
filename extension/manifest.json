@@ -20,7 +20,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*.onrender.com/*", "*://localhost/*"],
+      "matches": ["*://xtok-app.onrender.com/*", "*://localhost/*", "*://127.0.0.1/*", "*://*.xnhau.loan/*", "*://*.xnhau.tech/*", "*://*.xnhau.ink/*", "*://xnhau.ink/*"],
       "js": ["content.js"]
     }
   ],

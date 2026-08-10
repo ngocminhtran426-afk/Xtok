@@ -57,7 +57,7 @@ function updateDynamicRule(cookieValue) {
     },
     condition: {
       urlFilter: 'xnhau',
-      resourceTypes: ['media', 'other']
+      resourceTypes: ['sub_frame', 'media', 'other']
     }
   };
 
@@ -80,18 +80,19 @@ function removeDynamicRule() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    fetch(request.url, { credentials: 'include' }) 
-      .then(res => res.text())
-      .then(html => {
-        chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
-        const match = html.match(/https:\/\/[^"']*\.mp4/);
-        sendResponse({ mp4Url: match ? match[0] : null });
-      })
-      .catch(err => {
-        console.error(err);
-        chrome.storage.local.set({ debug_html: err.toString() });
-        sendResponse({ mp4Url: null });
-      });
+    chrome.tabs.query({ url: "*://*.xnhau.ink/*" }, (tabs) => {
+      if (tabs.length > 0) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ mp4Url: null, error: "Tab proxy failed" });
+          } else {
+            sendResponse(response);
+          }
+        });
+      } else {
+        sendResponse({ mp4Url: null, error: "No xnhau tab open" });
+      }
+    });
     return true; // async
   }
 });
