@@ -480,6 +480,6 @@ const VideoCard = React.forwardRef(({ video, isActive, onVideoEnd }, ref) => {
       </div>
     </div>
   );
-};
+});
 
 export default VideoCard;
