@@ -140,7 +140,7 @@ app.get('/api/videos', requireAuth, async (req, res) => {
       if (lastFetchTime > 0) {
         await (db as any).refreshCache(); // Force adapter to pull fresh data from sheet
       }
-      const { items } = await db.findVideos({ limit: 100 });
+      const { items } = await db.findVideos({ limit: 2000 });
       
       // Map to TikTok UI expected schema
       cachedVideos = items.map((v: any) => ({
@@ -177,17 +177,21 @@ app.get('/api/videos', requireAuth, async (req, res) => {
     const seenRecords = await WatchHistory.find({ user_id: userId }).select('video_id');
     const seenSet = new Set(seenRecords.map(r => r.video_id));
     
-    const feedVideos = cachedVideos.filter(v => !seenSet.has(String(v.id)));
+    const unseenVideos = cachedVideos.filter(v => !seenSet.has(String(v.id)));
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 20;
+    const startIndex = (page - 1) * limit;
+    const feedVideos = unseenVideos.slice(startIndex, startIndex + limit);
 
     res.json({
       data: feedVideos,
       meta: {
         pagination: {
-          total: feedVideos.length,
+          total: unseenVideos.length,
           count: feedVideos.length,
-          per_page: 10,
-          current_page: parseInt(req.query.page as string) || 1,
-          total_pages: Math.ceil(feedVideos.length / 10)
+          per_page: limit,
+          current_page: page,
+          total_pages: Math.ceil(unseenVideos.length / limit)
         }
       }
     });

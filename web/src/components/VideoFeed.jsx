@@ -6,23 +6,41 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 const VideoFeed = () => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   const feedRef = useRef(null);
 
   useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const response = await axios.get('/api/videos');
-        const shuffled = response.data.data.sort(() => Math.random() - 0.5);
-        setVideos(shuffled);
-      } catch (error) {
-        console.error("Failed to fetch videos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchVideos();
+    fetchVideos(1);
   }, []);
+
+  const fetchVideos = async (pageNum) => {
+    if (!hasMore) return;
+    try {
+      const response = await axios.get(`/api/videos?page=${pageNum}`);
+      const newVideos = response.data.data;
+      if (newVideos.length === 0) {
+        setHasMore(false);
+      } else {
+        const shuffled = newVideos.sort(() => Math.random() - 0.5);
+        setVideos(prev => [...prev, ...shuffled]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch videos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScroll = (e) => {
+    const { scrollTop, clientHeight, scrollHeight } = e.target;
+    if (scrollTop + clientHeight >= scrollHeight - 200 && !loading && hasMore) {
+      setLoading(true);
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchVideos(nextPage);
+    }
+  };
 
   const smoothScrollTo = (container, targetTop) => {
     // Tạm thời tắt scroll-snap để tránh lỗi nhảy cóc của Chrome
@@ -72,12 +90,12 @@ const VideoFeed = () => {
     }
   };
 
-  if (loading) {
+  if (loading && videos.length === 0) {
     return <div className="video-feed" style={{ justifyContent: 'center', fontSize: 24 }}>Đang tải...</div>;
   }
 
   return (
-    <main className="video-feed" ref={feedRef}>
+    <main className="video-feed" ref={feedRef} onScroll={handleScroll}>
       {videos.map((video, idx) => (
         <VideoCard key={idx} video={video} />
       ))}
@@ -89,9 +107,16 @@ const VideoFeed = () => {
       </div>
 
       {/* Skeleton for loading more */}
-      <div style={{ height: 100, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ width: 30, height: 30, border: '3px solid var(--primary-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-      </div>
+      {hasMore && (
+        <div style={{ height: 100, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ width: 30, height: 30, border: '3px solid var(--primary-color)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        </div>
+      )}
+      {!hasMore && videos.length > 0 && (
+        <div style={{ height: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#666', fontSize: 14 }}>
+          Bạn đã xem hết video!
+        </div>
+      )}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes spin { 100% { transform: rotate(360deg); } }
       `}} />
