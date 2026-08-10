@@ -13,9 +13,10 @@ chrome.storage.local.get(['cf_clearance'], (result) => {
 });
 
 function checkExistingCookies() {
-  chrome.cookies.getAll({ name: 'cf_clearance' }, (cookies) => {
+  chrome.cookies.getAll({ domain: 'xnhau.ink' }, (cookies) => {
+    chrome.storage.local.set({ debug_cookies: cookies.map(c => c.name + ':' + c.domain).join(', ') });
     if (cookies && cookies.length > 0) {
-      const xnhauCookie = cookies.find(c => c.domain.includes('xnhau'));
+      const xnhauCookie = cookies.find(c => c.name === 'cf_clearance');
       if (xnhauCookie) {
         currentClearance = xnhauCookie.value;
         chrome.storage.local.set({ cf_clearance: currentClearance });
@@ -28,11 +29,15 @@ function checkExistingCookies() {
 // Lắng nghe sự kiện cookie thay đổi (khi người dùng giải captcha)
 chrome.cookies.onChanged.addListener((changeInfo) => {
   const cookie = changeInfo.cookie;
-  if (cookie.name === 'cf_clearance' && cookie.domain.includes('xnhau')) {
-    if (!changeInfo.removed && cookie.value !== currentClearance) {
-      currentClearance = cookie.value;
-      console.log('Phát hiện thẻ bài mới:', currentClearance);
-      // Lưu lại
+  if (cookie.domain.includes('xnhau')) {
+    chrome.storage.local.get(['debug_cookies'], (result) => {
+      chrome.storage.local.set({ debug_cookies: (result.debug_cookies || '') + ' | chg:' + cookie.name + '=' + (changeInfo.removed ? 'rem' : 'set') });
+    });
+    if (cookie.name === 'cf_clearance') {
+      if (!changeInfo.removed && cookie.value !== currentClearance) {
+        currentClearance = cookie.value;
+        console.log('Phát hiện thẻ bài mới:', currentClearance);
+        // Lưu lại
       chrome.storage.local.set({ cf_clearance: currentClearance });
       // Cập nhật luật ép cookie
       updateDynamicRule(currentClearance);
