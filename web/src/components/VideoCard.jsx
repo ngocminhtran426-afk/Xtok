@@ -7,14 +7,17 @@ import axios from 'axios';
 let globalMuted = true;
 let globalVolume = 1; // Default to 1 so when unmuted, it has volume
 
-const VideoCard = ({ video }) => {
+const VideoCard = React.forwardRef(({ video, isActive, onVideoEnd }, ref) => {
   const [playing, setPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(globalVolume);
   const [isMuted, setIsMuted] = useState(globalMuted);
   const [resolvedMp4Url, setResolvedMp4Url] = useState(null);
   const [useEmbedFallback, setUseEmbedFallback] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const videoRef = useRef(null);
@@ -111,20 +114,10 @@ const VideoCard = ({ video }) => {
       if (matchId) videoId = matchId[1];
     }
 
+    // Always use direct URL if it's xnhau
     if (videoId) {
-      axios.get(`/api/videos/resolve/${videoId}`)
-        .then(res => {
-          if (res.data.url) {
-             // Pass through the backend proxy stream to bypass Cloudflare
-             setResolvedMp4Url(`/api/videos/stream?url=${encodeURIComponent(res.data.url)}`);
-          } else {
-             setUseEmbedFallback(true);
-          }
-        })
-        .catch(err => {
-          console.error("Failed to resolve MP4 URL:", err);
-          setUseEmbedFallback(true);
-        });
+      const directUrl = `https://xnhau.ink/video/${videoId}.mp4`;
+      setResolvedMp4Url(directUrl);
     }
   }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url]);
   
@@ -300,6 +293,35 @@ const VideoCard = ({ video }) => {
           }}
         />
 
+        {needsVerification && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '20px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>Cần xác minh bảo mật</div>
+            <div style={{ marginBottom: '24px', fontSize: '14px', color: '#ccc', maxWidth: '300px', lineHeight: '1.5' }}>
+              Trang đích yêu cầu xác minh Captcha. Vui lòng nhấn nút bên dưới để mở trang xác minh (Popup). Sau khi xác minh xong, hãy đóng popup và nhấn Tải lại.
+            </div>
+            <button 
+              onClick={() => {
+                const vid = isTiktok ? '' : video.file_url.split(':')[1];
+                if (vid) {
+                  window.open(`https://xnhau.ink/embed/${vid}`, '_blank', 'width=500,height=600');
+                }
+              }}
+              style={{ padding: '12px 24px', backgroundColor: '#fe2c55', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px', outline: 'none' }}
+            >
+              Mở trang xác minh
+            </button>
+            <button 
+              onClick={() => {
+                setNeedsVerification(false);
+                setRetryCount(c => c + 1);
+              }}
+              style={{ padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', outline: 'none' }}
+            >
+              Tôi đã xác minh xong, Tải lại
+            </button>
+          </div>
+        )}
+
         {isTiktok || (useEmbedFallback && embedSrc) ? (
           <div className="webview-container" style={{ 
             backgroundPosition: 'center' 
@@ -340,8 +362,8 @@ const VideoCard = ({ video }) => {
                 onLoadedMetadata={handleLoadedMetadata}
                 style={{ position: 'relative', zIndex: 1 }}
                 onError={() => {
-                  console.log("MP4 load failed, falling back to embed player");
-                  setUseEmbedFallback(true);
+                  console.log("MP4 load failed, asking user to verify");
+                  setNeedsVerification(true);
                 }}
               />
             ) : null}

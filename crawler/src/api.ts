@@ -8,13 +8,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import { connectDb, User, WatchHistory } from './db';
 import { GoogleSheetsAdapter } from './adapters/google-sheets/adapter';
-import { chromium, Browser, BrowserContext } from 'playwright-extra';
-import stealthPlugin from 'puppeteer-extra-plugin-stealth';
-
-chromium.use(stealthPlugin());
-
-let globalBrowser: Browser | null = null;
-let globalContext: BrowserContext | null = null;
+import https from 'https';
 
 // Helper: Seeded Random Female Vietnamese Name Generator
 function generateFemaleProfile(seedStr: string) {
@@ -206,95 +200,49 @@ app.get('/api/videos', requireAuth, async (req, res) => {
 app.get('/api/videos/resolve/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    const mainDomain = 'https://xnhau.ink';
-    const embedUrl = `${mainDomain}/embed/${id}`;
-    
-    if (!globalContext) {
-      return res.status(500).json({ error: 'Browser not initialized for Cloudflare bypass' });
-    }
-
-    const page = await globalContext.newPage();
-    
-    try {
-      await page.goto(embedUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      
-      // Wait for the video element or mp4 link up to 20 seconds. 
-      // This gives the user time to click the Cloudflare captcha if needed.
-      await page.waitForSelector('video, source', { timeout: 25000 });
-      
-      const html = await page.content();
-      const match = html.match(/https:\/\/[^"']*\.mp4/);
-      
-      if (match) {
-        res.json({ url: match[0] });
-      } else {
-        const videoElem = await page.$('video source') || await page.$('video');
-        if (videoElem) {
-          const src = await videoElem.getAttribute('src');
-          if (src) {
-             res.json({ url: src });
-          } else {
-             res.status(404).json({ error: 'MP4 URL not found in tag' });
-          }
-        } else {
-          res.status(404).json({ error: 'MP4 URL not found' });
-        }
-      }
-    } catch (e: any) {
-      console.error('[API] Playwright resolve timeout/error:', e.message);
-      res.status(500).json({ error: 'Timeout waiting for video' });
-    } finally {
-      await page.close();
-    }
+    // Fallback simple resolving without Playwright for server stability
+    // The frontend will now handle verification natively
+    const directUrl = `https://xnhau.ink/video/${id}.mp4`;
+    res.json({ url: directUrl });
   } catch (error: any) {
     console.error('[API] Resolve error:', error);
     res.status(500).json({ error: 'Failed to resolve video' });
   }
 });
 
-// Proxy video stream to bypass Cloudflare on frontend
-import https from 'https';
-
+// Stream proxy is no longer used since frontend handles it, but keep it as a fallback
 app.get('/api/videos/stream', async (req, res) => {
   const targetUrl = req.query.url as string;
   if (!targetUrl) return res.status(400).send('Missing url parameter');
 
   try {
-    if (!globalContext) {
-      return res.status(500).send('Browser not initialized');
-    }
-
     const headers: Record<string, string> = {
       'Referer': 'https://xnhau.ink/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     };
     if (req.headers.range) {
         headers['Range'] = req.headers.range;
     }
 
-    // Use Playwright's built-in fetch to completely share the same TLS fingerprint and cookies!
-    const response = await globalContext.request.get(targetUrl, { headers });
+    const proxyReq = https.get(targetUrl, { headers }, (proxyRes: any) => {
+      const filteredHeaders = { ...proxyRes.headers };
+      delete filteredHeaders['connection'];
+      delete filteredHeaders['keep-alive'];
+      delete filteredHeaders['transfer-encoding'];
+      
+      res.writeHead(proxyRes.statusCode, filteredHeaders);
+      proxyRes.pipe(res);
+    });
 
-    if (response.status() >= 400 && response.status() !== 416) {
-         console.error(`[Stream] Playwright got status ${response.status()} for ${targetUrl}`);
-    }
-
-    const respHeaders = response.headers();
-    const filteredHeaders: Record<string, string> = {};
+    proxyReq.on('error', (err: any) => {
+      if (!res.headersSent) res.status(500).end();
+    });
     
-    for (const [k, v] of Object.entries(respHeaders)) {
-      if (!['connection', 'keep-alive', 'transfer-encoding', 'content-encoding'].includes(k.toLowerCase())) {
-        filteredHeaders[k] = v;
-      }
-    }
-    
-    res.writeHead(response.status(), filteredHeaders);
-    
-    // Playwright returns the full buffer
-    const buffer = await response.body();
-    res.end(buffer);
+    req.on('close', () => {
+      proxyReq.destroy(); 
+    });
 
   } catch (err: any) {
-    console.error('[Stream] Setup error:', err.message);
     if (!res.headersSent) res.status(500).end();
   }
 });
@@ -547,20 +495,7 @@ app.listen(Number(port), '0.0.0.0', async () => {
     }));
     lastFetchTime = Date.now();
     console.log(`[API] Cache primed with ${items.length} videos`);
-    
-    try {
-      globalBrowser = await chromium.launch({ 
-        headless: false, // Hiển thị giao diện để người dùng có thể pass captcha lần đầu
-        args: ['--disable-blink-features=AutomationControlled']
-      });
-      globalContext = await globalBrowser.newContext({
-        viewport: { width: 1280, height: 720 },
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      });
-      console.log(`[API] Playwright browser initialized for bypassing Cloudflare`);
-    } catch (e) {
-      console.error(`[API] Failed to init Playwright:`, e);
-    }
+    console.log(`[API] Playwright has been removed for server stability. Verification handled by frontend.`);
   } catch (error) {
     console.error(`[API] Failed to connect to DB or Sheets:`, error);
   }
