@@ -33,18 +33,18 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
     chrome.storage.local.get(['debug_cookies'], (result) => {
       chrome.storage.local.set({ debug_cookies: (result.debug_cookies || '') + ' | chg:' + cookie.name + '=' + (changeInfo.removed ? 'rem' : 'set') });
     });
+    
     if (cookie.name === 'cf_clearance') {
       if (!changeInfo.removed && cookie.value !== currentClearance) {
         currentClearance = cookie.value;
         console.log('Phát hiện thẻ bài mới:', currentClearance);
-        // Lưu lại
-      chrome.storage.local.set({ cf_clearance: currentClearance });
-      // Cập nhật luật ép cookie
-      updateDynamicRule(currentClearance);
-    } else if (changeInfo.removed) {
-      currentClearance = '';
-      chrome.storage.local.remove(['cf_clearance']);
-      removeDynamicRule();
+        chrome.storage.local.set({ cf_clearance: currentClearance });
+        updateDynamicRule(currentClearance);
+      } else if (changeInfo.removed) {
+        currentClearance = '';
+        chrome.storage.local.remove(['cf_clearance']);
+        removeDynamicRule();
+      }
     }
   }
 });
