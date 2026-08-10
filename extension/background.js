@@ -57,7 +57,7 @@ function updateDynamicRule(cookieValue) {
     },
     condition: {
       urlFilter: 'xnhau',
-      resourceTypes: ['sub_frame', 'xmlhttprequest', 'media', 'main_frame', 'other']
+      resourceTypes: ['media', 'other']
     }
   };
 
