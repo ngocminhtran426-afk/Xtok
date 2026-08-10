@@ -7,7 +7,7 @@ import axios from 'axios';
 let globalMuted = true;
 let globalVolume = 1; // Default to 1 so when unmuted, it has volume
 
-const VideoCard = React.forwardRef(({ video, isActive, onVideoEnd }, ref) => {
+const VideoCard = ({ video, isActive, onVideoEnd }) => {
   const [playing, setPlaying] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -480,6 +480,6 @@ const VideoCard = React.forwardRef(({ video, isActive, onVideoEnd }, ref) => {
       </div>
     </div>
   );
-});
+};
 
 export default VideoCard;
