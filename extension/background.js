@@ -77,3 +77,19 @@ function removeDynamicRule() {
     removeRuleIds: [2]
   });
 }
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "FETCH_XNHAU") {
+    fetch(request.url)
+      .then(res => res.text())
+      .then(html => {
+        const match = html.match(/https:\/\/[^"']*\.mp4/);
+        sendResponse({ mp4Url: match ? match[0] : null });
+      })
+      .catch(err => {
+        console.error(err);
+        sendResponse({ mp4Url: null });
+      });
+    return true; // async
+  }
+});

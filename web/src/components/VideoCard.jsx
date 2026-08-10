@@ -116,20 +116,28 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
     // Always use direct URL if it's xnhau
     if (videoId) {
-      axios.get(`https://xnhau.ink/embed/${videoId}`)
-        .then(res => {
-          const html = res.data;
-          const match = html.match(/https:\/\/[^"']*\.mp4/);
-          if (match) {
-            setResolvedMp4Url(match[0]);
+      const targetUrl = `https://xnhau.ink/embed/${videoId}`;
+      const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
+      
+      const handleMessage = (event) => {
+        if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
+          window.removeEventListener("message", handleMessage);
+          if (event.data.mp4Url) {
+            setResolvedMp4Url(event.data.mp4Url);
           } else {
-            setResolvedMp4Url(`https://xnhau.ink/video/${videoId}.mp4`);
+            setResolvedMp4Url(fallbackUrl);
           }
-        })
-        .catch(err => {
-          console.log('Failed to fetch embed html, falling back to direct url', err);
-          setResolvedMp4Url(`https://xnhau.ink/video/${videoId}.mp4`);
-        });
+        }
+      };
+      
+      window.addEventListener("message", handleMessage);
+      window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
+      
+      // Timeout fallback in case extension is not running
+      setTimeout(() => {
+        window.removeEventListener("message", handleMessage);
+        setResolvedMp4Url(prev => prev || fallbackUrl);
+      }, 3000);
     }
   }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url]);
   
