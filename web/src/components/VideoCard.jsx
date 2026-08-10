@@ -357,6 +357,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 muted={isMuted}
                 autoPlay
                 playsInline
+                referrerPolicy="no-referrer"
                 onClick={togglePlay}
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}

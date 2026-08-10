@@ -51,7 +51,8 @@ function updateDynamicRule(cookieValue) {
     action: {
       type: 'modifyHeaders',
       requestHeaders: [
-        { header: 'Cookie', operation: 'append', value: `cf_clearance=${cookieValue}` }
+        { header: 'Cookie', operation: 'append', value: `cf_clearance=${cookieValue}` },
+        { header: 'Referer', operation: 'set', value: 'https://xnhau.ink/' }
       ]
     },
     condition: {
