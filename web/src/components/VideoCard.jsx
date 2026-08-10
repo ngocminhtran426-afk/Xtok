@@ -17,7 +17,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   const [isMuted, setIsMuted] = useState(globalMuted);
   const [resolvedMp4Url, setResolvedMp4Url] = useState(null);
   const [useEmbedFallback, setUseEmbedFallback] = useState(false);
-  const [needsVerification, setNeedsVerification] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const videoRef = useRef(null);
@@ -283,7 +282,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     <div className="video-card-container" ref={ref}>
       <div 
         className="video-wrapper" 
-        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', opacity: (isReady || needsVerification) ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
+        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', opacity: isReady ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
       >
         {/* Lớp nền mờ giống hệt Tiktok Web */}
         <div 
@@ -292,35 +291,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             backgroundImage: `url(${video.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(30px)', opacity: 0.4, zIndex: 0
           }}
         />
-
-        {needsVerification && (
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '20px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>Cần xác minh bảo mật</div>
-            <div style={{ marginBottom: '24px', fontSize: '14px', color: '#ccc', maxWidth: '300px', lineHeight: '1.5' }}>
-              Trang đích yêu cầu xác minh Captcha. Vui lòng nhấn nút bên dưới để mở trang xác minh (Popup). Sau khi xác minh xong, hãy đóng popup và nhấn Tải lại.
-            </div>
-            <button 
-              onClick={() => {
-                const vid = isTiktok ? '' : video.file_url.split(':')[1];
-                if (vid) {
-                  window.open(`https://xnhau.ink/embed/${vid}`, '_blank', 'width=500,height=600');
-                }
-              }}
-              style={{ padding: '12px 24px', backgroundColor: '#fe2c55', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px', outline: 'none' }}
-            >
-              Mở trang xác minh
-            </button>
-            <button 
-              onClick={() => {
-                setNeedsVerification(false);
-                setRetryCount(c => c + 1);
-              }}
-              style={{ padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', outline: 'none' }}
-            >
-              Tôi đã xác minh xong, Tải lại
-            </button>
-          </div>
-        )}
 
         {isTiktok || (useEmbedFallback && embedSrc) ? (
           <div className="webview-container" style={{ 
@@ -362,8 +332,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 onLoadedMetadata={handleLoadedMetadata}
                 style={{ position: 'relative', zIndex: 1 }}
                 onError={() => {
-                  console.log("MP4 load failed, asking user to verify");
-                  setNeedsVerification(true);
+                  console.log("MP4 load failed, falling back to embed player");
+                  setUseEmbedFallback(true);
                 }}
               />
             ) : null}
