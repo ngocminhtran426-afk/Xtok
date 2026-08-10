@@ -115,7 +115,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     }
 
     if (videoId) {
-      const targetUrl = `https://xnhau.ink/video/${videoId}`;
+      const targetUrl = `https://xnhau.ink/embed/${videoId}`;
       const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
       
       const handleMessage = (event) => {
@@ -325,7 +325,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               onClick={() => {
                 const vid = isTiktok ? '' : video.file_url.split(':')[1];
                 if (vid) {
-                  window.open(`https://xnhau.ink/video/${vid}`, '_blank', 'width=500,height=600');
+                  window.open(`https://xnhau.ink/embed/${vid}`, '_blank', 'width=500,height=600');
                 }
               }}
               style={{ padding: '12px 24px', backgroundColor: '#fe2c55', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px', outline: 'none' }}
