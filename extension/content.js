@@ -7,11 +7,21 @@ if (window.location.hostname.includes('xnhau')) {
         .then(html => {
           chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
           const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification');
-          const match = html.match(/https:\/\/[^"']*\.mp4/);
+          
+          // Cố gắng tìm link mp4 hoặc m3u8. Nhiều khi link bị ẩn trong flashvars hoặc mã hóa
+          let mp4Url = null;
+          const mp4Match = html.match(/https:\/\/[^"']*\.mp4[^"']*/i);
+          const m3u8Match = html.match(/https:\/\/[^"']*\.m3u8[^"']*/i);
+          const rawMatch = html.match(/(?:video_url|src)["'\s:]+([^"']+)/i);
+          
+          if (mp4Match) mp4Url = mp4Match[0];
+          else if (m3u8Match) mp4Url = m3u8Match[0];
+          else if (rawMatch && rawMatch[1].startsWith('http')) mp4Url = rawMatch[1];
+          
           if (isCaptcha) {
             sendResponse({ mp4Url: null, error: "CAPTCHA" });
-          } else if (match) {
-            sendResponse({ mp4Url: match[0] });
+          } else if (mp4Url) {
+            sendResponse({ mp4Url: mp4Url });
           } else {
             sendResponse({ mp4Url: null, error: "NO_MP4" });
           }

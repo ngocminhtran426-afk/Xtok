@@ -395,13 +395,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 style={{ position: 'relative', zIndex: 1 }}
                 onError={() => {
                   console.log("MP4 load failed");
-                  if (resolvedMp4Url) {
-                    console.log("Falling back to iframe due to hotlink protection");
-                    setUseEmbedFallback(true);
-                    setNeedsVerification(false);
-                  } else {
-                    setNeedsVerification(true);
-                  }
+                  setNeedsVerification(true);
                 }}
               />
             ) : null}
