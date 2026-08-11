@@ -51,13 +51,13 @@ function updateDynamicRule(cookieValue) {
     action: {
       type: 'modifyHeaders',
       requestHeaders: [
-        { header: 'Cookie', operation: 'append', value: cookieValue },
-        { header: 'Referer', operation: 'append', value: 'https://xnhau.ink/' }
+        { header: 'Cookie', operation: 'set', value: cookieValue },
+        { header: 'Referer', operation: 'set', value: 'https://xnhau.ink/' }
       ]
     },
     condition: {
       urlFilter: '||xnhau.ink',
-      resourceTypes: ['sub_frame', 'media', 'other', 'xmlhttprequest']
+      resourceTypes: ['sub_frame']
     }
   };
 
