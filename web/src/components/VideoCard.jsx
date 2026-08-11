@@ -131,6 +131,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             setUseEmbedFallback(true);
           } else if (event.data.mp4Url) {
             setResolvedMp4Url(event.data.mp4Url);
+            setNeedsVerification(false);
           } else {
             setNeedsVerification(true);
           }
