@@ -57,7 +57,8 @@ function updateDynamicRule(cookieValue) {
     },
     condition: {
       urlFilter: '||xnhau.ink',
-      resourceTypes: ['sub_frame', 'media', 'xmlhttprequest']
+      resourceTypes: ['sub_frame', 'media', 'xmlhttprequest'],
+      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1']
     }
   };
 
