@@ -14,7 +14,7 @@
     },
     "condition": {
       "urlFilter": "xnhau",
-      "resourceTypes": ["sub_frame", "media"]
+      "resourceTypes": ["sub_frame", "media", "xmlhttprequest"]
     }
   }
 ]
