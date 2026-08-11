@@ -124,7 +124,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
           if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
             alert("⚠️ LỖI KẾT NỐI EXTENSION ⚠️\n\nExtension vừa được cập nhật nhưng trang web chưa nhận diện được.\n\nVUI LÒNG LÀM THEO 2 BƯỚC:\n1. F5 (Tải lại) trang web XTok này.\n2. Đóng tab xác minh cũ, bấm Nút Đỏ để mở tab xác minh mới.");
             setNeedsVerification(true);
-          } else if (event.data.error === "No xnhau tab open" || event.data.error === "CAPTCHA") {
+          } else if (event.data.error === "No xnhau tab open") {
+            alert("⚠️ LỖI: BẠN ĐÃ ĐÓNG TAB XÁC MINH QUÁ SỚM! ⚠️\n\nVui lòng bấm lại Nút Đỏ, đợi nó tải xong video rồi để nguyên tab đó (KHÔNG ĐƯỢC ĐÓNG), sau đó quay lại trang này bấm Nút Đen.");
+            setNeedsVerification(true);
+          } else if (event.data.error === "CAPTCHA") {
             setNeedsVerification(true);
           } else if (event.data.error === "NO_MP4") {
             setNeedsVerification(false);
@@ -322,32 +325,31 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         />
 
         {needsVerification && (
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: '20px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>Cần xác minh bảo mật</div>
-            <div style={{ marginBottom: '24px', fontSize: '14px', color: '#ccc', maxWidth: '300px', lineHeight: '1.5' }}>
-              Trang đích yêu cầu xác minh Captcha. Vui lòng nhấn nút bên dưới để mở trang mồi ở Tab mới. <br/><br/>
-              <b>LƯU Ý QUAN TRỌNG:</b> Sau khi giải Captcha xong, <b>KHÔNG ĐƯỢC ĐÓNG TAB ĐÓ</b>. Hãy giữ Tab đó mở để Extension có thể làm trạm lấy link video.
+          <div style={{ position: 'absolute', top: 'auto', bottom: '60px', left: '10px', right: '10px', backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,59,92,0.5)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+            <button 
+              onClick={() => setNeedsVerification(false)}
+              style={{ position: 'absolute', top: '5px', right: '10px', background: 'none', border: 'none', color: '#fff', fontSize: '18px', cursor: 'pointer', opacity: 0.7 }}
+            >
+              ✕
+            </button>
+            <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '15px' }}>⚠️ Lỗi: Video bị chặn</h4>
+            <p style={{ color: '#ccc', fontSize: '12px', marginBottom: '15px', textAlign: 'center' }}>
+              Nếu video không tải được, hãy mở trang xác minh (KHÔNG ĐÓNG TAB ĐÓ), rồi quay lại đây tải lại.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+              <button 
+                onClick={() => window.open(`https://xnhau.ink/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`, '_blank')}
+                style={{ flex: 1, backgroundColor: '#ff3b5c', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+              >
+                1. Mở trang xác minh
+              </button>
+              <button 
+                onClick={() => setRetryCount(prev => prev + 1)}
+                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+              >
+                2. Đã xong, Tải lại
+              </button>
             </div>
-            <button 
-              onClick={() => {
-                const vid = isTiktok ? '' : video.file_url.split(':')[1];
-                if (vid) {
-                  window.open(`https://xnhau.ink/embed/${vid}`, '_blank', 'width=500,height=600');
-                }
-              }}
-              style={{ padding: '12px 24px', backgroundColor: '#fe2c55', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px', outline: 'none' }}
-            >
-              Mở trang xác minh
-            </button>
-            <button 
-              onClick={() => {
-                setNeedsVerification(false);
-                setRetryCount(c => c + 1);
-              }}
-              style={{ padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', outline: 'none' }}
-            >
-              Đã mở và giải Captcha, Tải lại
-            </button>
           </div>
         )}
 
