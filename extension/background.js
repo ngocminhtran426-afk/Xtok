@@ -80,33 +80,19 @@ function removeDynamicRule() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    fetch(request.url)
-      .then(res => res.text())
-      .then(html => {
-        chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
-        const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification');
-        
-        let mp4Url = null;
-        const mp4Match = html.match(/https:\/\/[^"']*\.mp4[^"']*/i);
-        const m3u8Match = html.match(/https:\/\/[^"']*\.m3u8[^"']*/i);
-        const rawMatch = html.match(/(?:video_url|src)["'\s:]+([^"']+)/i);
-        
-        if (mp4Match) mp4Url = mp4Match[0];
-        else if (m3u8Match) mp4Url = m3u8Match[0];
-        else if (rawMatch && rawMatch[1].startsWith('http')) mp4Url = rawMatch[1];
-        
-        if (isCaptcha) {
-          sendResponse({ mp4Url: null, error: "CAPTCHA" });
-        } else if (mp4Url) {
-          sendResponse({ mp4Url: mp4Url });
-        } else {
-          sendResponse({ mp4Url: null, error: "NO_MP4" });
-        }
-      })
-      .catch(err => {
-        chrome.storage.local.set({ debug_html: "Error: " + err.message });
-        sendResponse({ mp4Url: null });
-      });
+    chrome.tabs.query({ url: "*://*.xnhau.ink/*" }, (tabs) => {
+      if (tabs.length > 0) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ mp4Url: null, error: "Tab proxy failed" });
+          } else {
+            sendResponse(response);
+          }
+        });
+      } else {
+        sendResponse({ mp4Url: null, error: "No xnhau tab open" });
+      }
+    });
     return true; // async
   }
 });

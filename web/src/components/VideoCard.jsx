@@ -130,8 +130,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
           } else if (event.data.error === "CAPTCHA") {
             setNeedsVerification(true);
           } else if (event.data.error === "NO_MP4") {
-            setNeedsVerification(false);
-            setUseEmbedFallback(true);
+            setNeedsVerification(true);
           } else if (event.data.mp4Url) {
             setResolvedMp4Url(event.data.mp4Url);
             setNeedsVerification(false);
@@ -310,6 +309,34 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   // Ẩn nội dung chờ lấy được video metadata thật để không bị layout shift
   const currentStyles = videoStyles || { width: '400px', height: 'calc(100vh - 32px)' };
 
+  // Khởi tạo HLS.js nếu video là định dạng m3u8
+  useEffect(() => {
+    if (inView && finalMp4Url && videoRef.current) {
+      if (finalMp4Url.includes('.m3u8') || finalMp4Url.includes('m3u8')) {
+        if (window.Hls && window.Hls.isSupported()) {
+          const hls = new window.Hls();
+          hls.loadSource(finalMp4Url);
+          hls.attachMedia(videoRef.current);
+          
+          hls.on(window.Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+              console.log("HLS fatal error:", data);
+              setNeedsVerification(true);
+            }
+          });
+
+          return () => {
+            hls.destroy();
+          };
+        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+          videoRef.current.src = finalMp4Url;
+        }
+      } else {
+        videoRef.current.src = finalMp4Url;
+      }
+    }
+  }, [finalMp4Url, inView]);
+
   return (
     <div className="video-card-container" ref={ref}>
       <div 
@@ -380,8 +407,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             {inView ? (
               <video 
                 key={retryCount}
+                id={"video-" + video.id}
                 ref={videoRef}
-                src={finalMp4Url}
                 className="video-element"
                 preload="metadata"
                 loop
