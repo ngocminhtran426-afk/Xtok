@@ -140,7 +140,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         setResolvedMp4Url(prev => prev || fallbackUrl);
       }, 3000);
     }
-  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url]);
+  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, retryCount]);
   
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
