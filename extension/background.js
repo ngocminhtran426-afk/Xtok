@@ -79,23 +79,44 @@ function removeDynamicRule() {
   });
 }
 
+let fetchQueue = [];
+let isFetching = false;
+
+function processQueue() {
+  if (isFetching || fetchQueue.length === 0) return;
+  isFetching = true;
+  
+  const { request, sendResponse } = fetchQueue.shift();
+
+  chrome.tabs.query({}, (tabs) => {
+    // Lọc các tab có URL chứa xnhau
+    const xnhauTabs = tabs.filter(t => t.url && t.url.includes('xnhau'));
+    if (xnhauTabs.length > 0) {
+      chrome.tabs.sendMessage(xnhauTabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ mp4Url: null, error: "Tab proxy failed" });
+        } else {
+          sendResponse(response);
+        }
+        
+        // Nghỉ 1 giây giữa các request để tránh bị hệ thống Anti-bot block do rate limit
+        setTimeout(() => {
+          isFetching = false;
+          processQueue();
+        }, 1000);
+      });
+    } else {
+      sendResponse({ mp4Url: null, error: "No xnhau tab open" });
+      isFetching = false;
+      processQueue();
+    }
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    chrome.tabs.query({}, (tabs) => {
-      // Lọc các tab có URL chứa xnhau
-      const xnhauTabs = tabs.filter(t => t.url && t.url.includes('xnhau'));
-      if (xnhauTabs.length > 0) {
-        chrome.tabs.sendMessage(xnhauTabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
-          if (chrome.runtime.lastError) {
-            sendResponse({ mp4Url: null, error: "Tab proxy failed" });
-          } else {
-            sendResponse(response);
-          }
-        });
-      } else {
-        sendResponse({ mp4Url: null, error: "No xnhau tab open" });
-      }
-    });
+    fetchQueue.push({ request, sendResponse });
+    processQueue();
     return true; // async
   }
 });

@@ -104,7 +104,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
   // Fetch dynamic MP4 URL with token
   useEffect(() => {
-    if (isTiktok || useEmbedFallback || rawMp4Url || resolvedMp4Url || !inView) return;
+    if (isTiktok || useEmbedFallback || rawMp4Url || resolvedMp4Url) return;
     
     let videoId = null;
     if (video.file_url?.startsWith('xnhau:')) {
@@ -147,7 +147,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       setTimeout(() => {
         window.removeEventListener("message", handleMessage);
         setResolvedMp4Url(prev => prev || fallbackUrl);
-      }, 10000);
+      }, 60000);
     }
   }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url, inView, retryCount]);
   
