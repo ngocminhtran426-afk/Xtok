@@ -29,6 +29,14 @@ if (window.location.hostname.includes('xnhau')) {
     if (event.source !== window || !event.data || event.data.type !== "FETCH_XNHAU") return;
     
     chrome.runtime.sendMessage({ type: "FETCH_XNHAU", url: event.data.url }, (response) => {
+      if (chrome.runtime.lastError) {
+        window.postMessage({ 
+          type: "FETCH_XNHAU_RESULT", 
+          url: event.data.url, 
+          error: "EXTENSION_DISCONNECTED"
+        }, "*");
+        return;
+      }
       window.postMessage({ 
         type: "FETCH_XNHAU_RESULT", 
         url: event.data.url, 
