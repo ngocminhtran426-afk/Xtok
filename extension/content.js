@@ -5,10 +5,19 @@ if (window.location.hostname.includes('xnhau')) {
       fetch(request.url)
         .then(res => res.text())
         .then(html => {
+          chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
+          const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification');
           const match = html.match(/https:\/\/[^"']*\.mp4/);
-          sendResponse({ mp4Url: match ? match[0] : null });
+          if (isCaptcha) {
+            sendResponse({ mp4Url: null, error: "CAPTCHA" });
+          } else if (match) {
+            sendResponse({ mp4Url: match[0] });
+          } else {
+            sendResponse({ mp4Url: null, error: "NO_MP4" });
+          }
         })
         .catch(err => {
+          chrome.storage.local.set({ debug_html: "Error: " + err.message });
           sendResponse({ mp4Url: null });
         });
       return true; // async

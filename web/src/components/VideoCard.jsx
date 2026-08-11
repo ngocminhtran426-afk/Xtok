@@ -121,8 +121,11 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       const handleMessage = (event) => {
         if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
           window.removeEventListener("message", handleMessage);
-          if (event.data.error === "No xnhau tab open") {
+          if (event.data.error === "No xnhau tab open" || event.data.error === "CAPTCHA") {
             setNeedsVerification(true);
+          } else if (event.data.error === "NO_MP4") {
+            setNeedsVerification(false);
+            setUseEmbedFallback(true);
           } else if (event.data.mp4Url) {
             setResolvedMp4Url(event.data.mp4Url);
           } else {
