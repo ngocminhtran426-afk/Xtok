@@ -9,9 +9,7 @@
         { "header": "content-security-policy", "operation": "remove" },
         { "header": "cross-origin-embedder-policy", "operation": "remove" },
         { "header": "cross-origin-opener-policy", "operation": "remove" },
-        { "header": "cross-origin-resource-policy", "operation": "remove" },
-        { "header": "access-control-allow-origin", "operation": "set", "value": "*" },
-        { "header": "access-control-allow-credentials", "operation": "set", "value": "true" }
+        { "header": "cross-origin-resource-policy", "operation": "remove" }
       ]
     },
     "condition": {
