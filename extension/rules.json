@@ -9,7 +9,10 @@
         { "header": "content-security-policy", "operation": "remove" },
         { "header": "cross-origin-embedder-policy", "operation": "remove" },
         { "header": "cross-origin-opener-policy", "operation": "remove" },
-        { "header": "cross-origin-resource-policy", "operation": "remove" }
+        { "header": "cross-origin-resource-policy", "operation": "remove" },
+        { "header": "access-control-allow-origin", "operation": "set", "value": "*" },
+        { "header": "access-control-allow-methods", "operation": "set", "value": "GET, HEAD, POST, PUT, DELETE, OPTIONS" },
+        { "header": "access-control-allow-headers", "operation": "set", "value": "Content-Type, Authorization, X-Requested-With, Range" }
       ]
     },
     "condition": {

@@ -335,7 +335,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         videoRef.current.src = finalMp4Url;
       }
     }
-  }, [finalMp4Url, inView]);
+  }, [finalMp4Url, inView, retryCount]);
 
   return (
     <div className="video-card-container" ref={ref}>
