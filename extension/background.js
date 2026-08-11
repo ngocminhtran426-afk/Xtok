@@ -56,7 +56,7 @@ function updateDynamicRule(cookieValue) {
       ]
     },
     condition: {
-      urlFilter: '||xnhau.ink',
+      urlFilter: 'xnhau',
       resourceTypes: ['sub_frame', 'media', 'xmlhttprequest'],
       initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1']
     }
@@ -81,9 +81,11 @@ function removeDynamicRule() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    chrome.tabs.query({ url: "*://*.xnhau.ink/*" }, (tabs) => {
-      if (tabs.length > 0) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
+    chrome.tabs.query({}, (tabs) => {
+      // Lọc các tab có URL chứa xnhau
+      const xnhauTabs = tabs.filter(t => t.url && t.url.includes('xnhau'));
+      if (xnhauTabs.length > 0) {
+        chrome.tabs.sendMessage(xnhauTabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
           if (chrome.runtime.lastError) {
             sendResponse({ mp4Url: null, error: "Tab proxy failed" });
           } else {
