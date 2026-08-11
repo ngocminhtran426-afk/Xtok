@@ -2,13 +2,23 @@ if (window.location.hostname.includes('xnhau')) {
   // Proxy mode: running on xnhau.ink
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "FETCH_XNHAU_PROXY") {
-      fetch(request.url)
-        .then(res => res.text())
-        .then(html => {
+      // Thay vì dùng fetch (bị WAF chặn do thiếu header điều hướng), ta dùng Iframe ẩn để giả lập tải trang thật.
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = request.url;
+      
+      const timeoutId = setTimeout(() => {
+        if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        sendResponse({ mp4Url: null, error: "TIMEOUT" });
+      }, 15000);
+
+      iframe.onload = () => {
+        clearTimeout(timeoutId);
+        try {
+          const html = iframe.contentDocument.body.innerHTML;
           chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
-          const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification');
+          const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification') || html.includes('captcha-box');
           
-          // Cố gắng tìm link mp4 hoặc m3u8. Nhiều khi link bị ẩn trong flashvars hoặc mã hóa
           let mp4Url = null;
           const mp4Match = html.match(/https:\/\/[^"']*\.mp4[^"']*/i);
           const m3u8Match = html.match(/https:\/\/[^"']*\.m3u8[^"']*/i);
@@ -25,11 +35,15 @@ if (window.location.hostname.includes('xnhau')) {
           } else {
             sendResponse({ mp4Url: null, error: "NO_MP4" });
           }
-        })
-        .catch(err => {
-          chrome.storage.local.set({ debug_html: "Error: " + err.message });
-          sendResponse({ mp4Url: null });
-        });
+        } catch (err) {
+          chrome.storage.local.set({ debug_html: "Iframe Error: " + err.message });
+          sendResponse({ mp4Url: null, error: "IFRAME_ACCESS_DENIED" });
+        } finally {
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        }
+      };
+      
+      document.body.appendChild(iframe);
       return true; // async
     }
   });
