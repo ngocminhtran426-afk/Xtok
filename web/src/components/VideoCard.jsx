@@ -145,7 +145,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       setTimeout(() => {
         window.removeEventListener("message", handleMessage);
         setResolvedMp4Url(prev => prev || fallbackUrl);
-      }, 3000);
+      }, 10000);
     }
   }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, retryCount]);
   
