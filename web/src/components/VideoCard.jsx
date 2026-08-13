@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Heart, MessageCircle, Share2, Music, Pause, Play, Volume2, VolumeX, Plus, Bookmark } from 'lucide-react';
-import Hls from 'hls.js'; // Not used but kept for Tiktok if needed
 
 const VideoCard = ({ video, inView, prefetchInView, setRefs, onMuteChange, globalMuted, globalVolume, onVolumeChange }) => {
   const [playing, setPlaying] = useState(false);
