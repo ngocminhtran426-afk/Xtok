@@ -367,7 +367,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     <div className="video-card-container" ref={setRefs}>
       <div 
         className="video-wrapper" 
-        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', opacity: (isReady || needsVerification) ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
+        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', transition: 'opacity 0.3s ease-in-out' }}
       >
         {/* Lớp nền mờ giống hệt Tiktok Web */}
         <div 
