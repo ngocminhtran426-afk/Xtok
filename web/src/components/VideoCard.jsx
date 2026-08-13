@@ -30,20 +30,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     threshold: 0.6, // Play when 60% of the video is visible
   });
 
-  // Intersection Observer to handle prefetching (fetch when within 2000px)
-  const { ref: prefetchRef, inView: prefetchInView } = useInView({
-    rootMargin: '2000px 0px',
-    triggerOnce: true
-  });
-
-  const setRefs = React.useCallback(
-    (node) => {
-      ref(node);
-      prefetchRef(node);
-    },
-    [ref, prefetchRef]
-  );
-
   useEffect(() => {
     let seenTimer;
     if (inView) {
@@ -118,8 +104,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
   // Fetch dynamic MP4 URL with token
   useEffect(() => {
-    // Chỉ prefetch khi video nằm trong khoảng 2000px (sắp hiển thị)
-    if (!prefetchInView || isTiktok || useEmbedFallback || rawMp4Url || resolvedMp4Url) return;
+    if (isTiktok || useEmbedFallback || rawMp4Url) return;
     
     let videoId = null;
     if (video.file_url?.startsWith('xnhau:')) {
@@ -136,8 +121,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       const handleMessage = (event) => {
         if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
           window.removeEventListener("message", handleMessage);
-          console.log("[VideoCard] Proxy result for", videoId, ":", event.data);
-          
           if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
             alert("⚠️ LỖI KẾT NỐI EXTENSION ⚠️\n\nExtension vừa được cập nhật nhưng trang web chưa nhận diện được.\n\nVUI LÒNG LÀM THEO 2 BƯỚC:\n1. F5 (Tải lại) trang web XTok này.\n2. Đóng tab xác minh cũ, bấm Nút Đỏ để mở tab xác minh mới.");
             setNeedsVerification(true);
@@ -161,20 +144,12 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
       
       // Timeout fallback in case extension is not running
-      const timeoutFallback = setTimeout(() => {
+      setTimeout(() => {
         window.removeEventListener("message", handleMessage);
-        if (!resolvedMp4Url) {
-          console.warn("Extension did not respond in time for", videoId);
-          setNeedsVerification(true);
-        }
-      }, 35000); // 35 seconds to allow queue to process
-      
-      return () => {
-        window.removeEventListener("message", handleMessage);
-        clearTimeout(timeoutFallback);
-      };
+        setResolvedMp4Url(prev => prev || fallbackUrl);
+      }, 10000);
     }
-  }, [prefetchInView, video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url, retryCount]);
+  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, retryCount]);
   
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
@@ -328,6 +303,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         setTimeout(() => clearInterval(tryPlay), 15000);
       })();
     `);
+    setVolume(newVol);
   };
 
   // Ẩn nội dung chờ lấy được video metadata thật để không bị layout shift
@@ -336,12 +312,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   // Khởi tạo HLS.js nếu video là định dạng m3u8
   useEffect(() => {
     if (inView && finalMp4Url && videoRef.current) {
-      const cacheBustedUrl = finalMp4Url + (finalMp4Url.includes('?') ? '&' : '?') + 'retry=' + retryCount;
-      
       if (finalMp4Url.includes('.m3u8') || finalMp4Url.includes('m3u8')) {
         if (window.Hls && window.Hls.isSupported()) {
           const hls = new window.Hls();
-          hls.loadSource(cacheBustedUrl);
+          hls.loadSource(finalMp4Url);
           hls.attachMedia(videoRef.current);
           
           hls.on(window.Hls.Events.ERROR, function (event, data) {
@@ -355,19 +329,19 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             hls.destroy();
           };
         } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-          videoRef.current.src = cacheBustedUrl;
+          videoRef.current.src = finalMp4Url;
         }
       } else {
-        videoRef.current.src = cacheBustedUrl;
+        videoRef.current.src = finalMp4Url;
       }
     }
   }, [finalMp4Url, inView, retryCount]);
 
   return (
-    <div className="video-card-container" ref={setRefs}>
+    <div className="video-card-container" ref={ref}>
       <div 
         className="video-wrapper" 
-        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', transition: 'opacity 0.3s ease-in-out' }}
+        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', opacity: (isReady || needsVerification) ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
       >
         {/* Lớp nền mờ giống hệt Tiktok Web */}
         <div 
@@ -397,21 +371,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 1. Mở trang xác minh
               </button>
               <button 
-                onClick={async (e) => { 
-                  e.stopPropagation();
-                  if (isRetrying) return;
-                  setIsRetrying(true);
-                  // Clear old URLs so the useEffect will trigger a NEW proxy fetch
-                  setResolvedMp4Url(null);
-                  // setRawMp4Url(null); // rawMp4Url is from prop, we can't change it, but it's null for xnhau
-                  setNeedsVerification(false); 
-                  setRetryCount(prev => prev + 1); 
-                  setIsRetrying(false);
-                }}
-                disabled={isRetrying}
-                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: isRetrying ? 'wait' : 'pointer', fontSize: '13px', opacity: isRetrying ? 0.5 : 1 }}
+                onClick={() => setRetryCount(prev => prev + 1)}
+                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
               >
-                {isRetrying ? "Đang tải..." : "2. Đã xong, Tải lại"}
+                2. Đã xong, Tải lại
               </button>
             </div>
           </div>
@@ -447,7 +410,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 id={"video-" + video.id}
                 ref={videoRef}
                 className="video-element"
-                src={finalMp4Url}
                 preload="metadata"
                 loop
                 muted={isMuted}
@@ -474,15 +436,21 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               style={{ padding: '8px 24px', background: isRetrying ? '#555' : 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: isRetrying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
               onClick={async (e) => {
                 e.stopPropagation();
-                if (isRetrying) return; // Don't require finalMp4Url because we might retry when it's null
+                if (isRetrying || !finalMp4Url) return;
                 
                 setIsRetrying(true);
                 setRetryCount(Date.now());
-                setResolvedMp4Url(null); // Force a new fetch from proxy
                 
+                try {
+                  // Gửi request HEAD kèm cache: 'reload' để ép Chrome tải lại và đè lên cache bị lỗi CORS cũ
+                  await fetch(finalMp4Url, { method: 'HEAD', cache: 'reload' });
+                } catch (err) {
+                  console.log("Fetch cache bypass failed, proceeding anyway", err);
+                }
+
+                // Đợi thêm 1 chút để đảm bảo cache trình duyệt được cập nhật
                 setTimeout(() => {
                   setUseEmbedFallback(false);
-                  setNeedsVerification(false); // Also clear verification overlay just in case
                   setIsRetrying(false);
                 }, 300);
               }}

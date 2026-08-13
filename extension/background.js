@@ -52,15 +52,13 @@ function updateDynamicRule(cookieValue) {
       type: 'modifyHeaders',
       requestHeaders: [
         { header: 'Cookie', operation: 'set', value: cookieValue },
-        { header: 'Referer', operation: 'set', value: 'https://xnhau.ink/' },
-        { header: 'Sec-Fetch-Site', operation: 'set', value: 'same-origin' },
-        { header: 'Sec-Fetch-Mode', operation: 'set', value: 'no-cors' },
-        { header: 'Sec-Fetch-Dest', operation: 'set', value: 'video' }
+        { header: 'Referer', operation: 'set', value: 'https://xnhau.ink/' }
       ]
     },
     condition: {
-      regexFilter: "(get_file|\\.mp4|\\.m3u8)",
-      resourceTypes: ['media', 'xmlhttprequest', 'other']
+      urlFilter: '||xnhau.ink',
+      resourceTypes: ['sub_frame', 'media', 'xmlhttprequest'],
+      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1']
     }
   };
 
@@ -81,60 +79,21 @@ function removeDynamicRule() {
   });
 }
 
-let fetchQueue = [];
-let isFetching = false;
-
-function processQueue() {
-  if (isFetching || fetchQueue.length === 0) return;
-  isFetching = true;
-  
-  const { request, sendResponse } = fetchQueue.shift();
-  const targetUrl = request.url;
-
-  fetch(targetUrl, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-      'User-Agent': navigator.userAgent
-    }
-  })
-  .then(res => res.text())
-  .then(html => {
-    const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification') || html.includes('captcha-box');
-    
-    let mp4Url = null;
-    const mp4Match = html.match(/https:\/\/[^"']*\.mp4[^"']*/i);
-    const m3u8Match = html.match(/https:\/\/[^"']*\.m3u8[^"']*/i);
-    const rawMatch = html.match(/(?:video_url|src)["'\s:]+([^"']+)/i);
-    
-    if (mp4Match) mp4Url = mp4Match[0];
-    else if (m3u8Match) mp4Url = m3u8Match[0];
-    else if (rawMatch && rawMatch[1].startsWith('http')) mp4Url = rawMatch[1];
-    
-    if (isCaptcha) {
-      sendResponse({ mp4Url: null, error: "CAPTCHA" });
-    } else if (mp4Url) {
-      sendResponse({ mp4Url: mp4Url });
-    } else {
-      sendResponse({ mp4Url: null, error: "NO_MP4" });
-    }
-  })
-  .catch(err => {
-    sendResponse({ mp4Url: null, error: "FETCH_FAILED", details: err.message });
-  })
-  .finally(() => {
-    setTimeout(() => {
-      isFetching = false;
-      processQueue();
-    }, 300);
-  });
-}
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "FETCH_XNHAU") {
-    fetchQueue.push({ request, sendResponse });
-    processQueue();
+    chrome.tabs.query({ url: "*://*.xnhau.ink/*" }, (tabs) => {
+      if (tabs.length > 0) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ mp4Url: null, error: "Tab proxy failed" });
+          } else {
+            sendResponse(response);
+          }
+        });
+      } else {
+        sendResponse({ mp4Url: null, error: "No xnhau tab open" });
+      }
+    });
     return true; // async
   }
 });
