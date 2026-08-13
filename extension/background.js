@@ -89,33 +89,45 @@ function processQueue() {
   isFetching = true;
   
   const { request, sendResponse } = fetchQueue.shift();
+  const targetUrl = request.url;
 
-  chrome.tabs.query({}, (tabs) => {
-    // Lọc các tab có URL chứa xnhau
-    const xnhauTabs = tabs.filter(t => t.url && t.url.includes('xnhau'));
-    if (xnhauTabs.length > 0) {
-      chrome.tabs.sendMessage(xnhauTabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
-        try {
-          if (chrome.runtime.lastError) {
-            sendResponse({ mp4Url: null, error: "Tab proxy failed" });
-          } else {
-            sendResponse(response);
-          }
-        } catch (e) {
-          console.error("Tab already closed, cannot send response", e);
-        }
-        
-        // Nghỉ 300ms giữa các request để tránh bị hệ thống Anti-bot block do rate limit
-        setTimeout(() => {
-          isFetching = false;
-          processQueue();
-        }, 300);
-      });
+  fetch(targetUrl, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'User-Agent': navigator.userAgent
+    }
+  })
+  .then(res => res.text())
+  .then(html => {
+    const isCaptcha = html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification') || html.includes('captcha-box');
+    
+    let mp4Url = null;
+    const mp4Match = html.match(/https:\/\/[^"']*\.mp4[^"']*/i);
+    const m3u8Match = html.match(/https:\/\/[^"']*\.m3u8[^"']*/i);
+    const rawMatch = html.match(/(?:video_url|src)["'\s:]+([^"']+)/i);
+    
+    if (mp4Match) mp4Url = mp4Match[0];
+    else if (m3u8Match) mp4Url = m3u8Match[0];
+    else if (rawMatch && rawMatch[1].startsWith('http')) mp4Url = rawMatch[1];
+    
+    if (isCaptcha) {
+      sendResponse({ mp4Url: null, error: "CAPTCHA" });
+    } else if (mp4Url) {
+      sendResponse({ mp4Url: mp4Url });
     } else {
-      try { sendResponse({ mp4Url: null, error: "No xnhau tab open" }); } catch (e) {}
+      sendResponse({ mp4Url: null, error: "NO_MP4" });
+    }
+  })
+  .catch(err => {
+    sendResponse({ mp4Url: null, error: "FETCH_FAILED", details: err.message });
+  })
+  .finally(() => {
+    setTimeout(() => {
       isFetching = false;
       processQueue();
-    }
+    }, 300);
   });
 }
 

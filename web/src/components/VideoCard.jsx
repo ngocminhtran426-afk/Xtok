@@ -447,6 +447,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 id={"video-" + video.id}
                 ref={videoRef}
                 className="video-element"
+                src={finalMp4Url}
                 preload="metadata"
                 loop
                 muted={isMuted}
