@@ -401,13 +401,9 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                   e.stopPropagation();
                   if (isRetrying) return;
                   setIsRetrying(true);
-                  if (finalMp4Url) {
-                    try {
-                      await fetch(finalMp4Url, { mode: 'no-cors', cache: 'reload' });
-                    } catch (err) {
-                      console.log("Bypass cache failed", err);
-                    }
-                  }
+                  // Clear old URLs so the useEffect will trigger a NEW proxy fetch
+                  setResolvedMp4Url(null);
+                  // setRawMp4Url(null); // rawMp4Url is from prop, we can't change it, but it's null for xnhau
                   setNeedsVerification(false); 
                   setRetryCount(prev => prev + 1); 
                   setIsRetrying(false);
@@ -477,21 +473,15 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               style={{ padding: '8px 24px', background: isRetrying ? '#555' : 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: isRetrying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
               onClick={async (e) => {
                 e.stopPropagation();
-                if (isRetrying || !finalMp4Url) return;
+                if (isRetrying) return; // Don't require finalMp4Url because we might retry when it's null
                 
                 setIsRetrying(true);
                 setRetryCount(Date.now());
+                setResolvedMp4Url(null); // Force a new fetch from proxy
                 
-                try {
-                  // Gửi request HEAD kèm cache: 'reload' để ép Chrome tải lại và đè lên cache bị lỗi CORS cũ
-                  await fetch(finalMp4Url, { method: 'HEAD', cache: 'reload' });
-                } catch (err) {
-                  console.log("Fetch cache bypass failed, proceeding anyway", err);
-                }
-
-                // Đợi thêm 1 chút để đảm bảo cache trình duyệt được cập nhật
                 setTimeout(() => {
                   setUseEmbedFallback(false);
+                  setNeedsVerification(false); // Also clear verification overlay just in case
                   setIsRetrying(false);
                 }, 300);
               }}
