@@ -336,10 +336,12 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   // Khởi tạo HLS.js nếu video là định dạng m3u8
   useEffect(() => {
     if (inView && finalMp4Url && videoRef.current) {
+      const cacheBustedUrl = finalMp4Url + (finalMp4Url.includes('?') ? '&' : '?') + 'retry=' + retryCount;
+      
       if (finalMp4Url.includes('.m3u8') || finalMp4Url.includes('m3u8')) {
         if (window.Hls && window.Hls.isSupported()) {
           const hls = new window.Hls();
-          hls.loadSource(finalMp4Url);
+          hls.loadSource(cacheBustedUrl);
           hls.attachMedia(videoRef.current);
           
           hls.on(window.Hls.Events.ERROR, function (event, data) {
@@ -353,10 +355,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             hls.destroy();
           };
         } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-          videoRef.current.src = finalMp4Url;
+          videoRef.current.src = cacheBustedUrl;
         }
       } else {
-        videoRef.current.src = finalMp4Url;
+        videoRef.current.src = cacheBustedUrl;
       }
     }
   }, [finalMp4Url, inView, retryCount]);
