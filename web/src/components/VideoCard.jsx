@@ -136,6 +136,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       const handleMessage = (event) => {
         if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
           window.removeEventListener("message", handleMessage);
+          console.log("[VideoCard] Proxy result for", videoId, ":", event.data);
+          
           if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
             alert("⚠️ LỖI KẾT NỐI EXTENSION ⚠️\n\nExtension vừa được cập nhật nhưng trang web chưa nhận diện được.\n\nVUI LÒNG LÀM THEO 2 BƯỚC:\n1. F5 (Tải lại) trang web XTok này.\n2. Đóng tab xác minh cũ, bấm Nút Đỏ để mở tab xác minh mới.");
             setNeedsVerification(true);
