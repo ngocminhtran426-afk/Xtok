@@ -369,7 +369,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         className="video-wrapper" 
         style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', transition: 'opacity 0.3s ease-in-out' }}
       >
-        {/* Lớp nền mờ giống hệt Tiktok Web */}
         <div 
           style={{
             position: 'absolute', top: '-10%', left: '-10%', right: '-10%', bottom: '-10%',
@@ -387,112 +386,46 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             </button>
             <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '15px' }}>⚠️ Lỗi: Video bị chặn</h4>
             <p style={{ color: '#ccc', fontSize: '12px', marginBottom: '15px', textAlign: 'center' }}>
-              Nếu video không tải được, hãy mở trang xác minh (KHÔNG ĐÓNG TAB ĐÓ), rồi quay lại đây tải lại.
+              Nếu video không tải được, hãy chờ hoặc nhấn Tải lại. (Có thể bạn cần giải Captcha hiển thị trên video)
             </p>
             <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
               <button 
-                onClick={() => window.open(`https://xnhau.ink/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`, '_blank')}
-                style={{ flex: 1, backgroundColor: '#ff3b5c', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-              >
-                1. Mở trang xác minh
-              </button>
-              <button 
                 onClick={async (e) => { 
                   e.stopPropagation();
-                  if (isRetrying) return;
-                  setIsRetrying(true);
-                  // Clear old URLs so the useEffect will trigger a NEW proxy fetch
-                  setResolvedMp4Url(null);
-                  // setRawMp4Url(null); // rawMp4Url is from prop, we can't change it, but it's null for xnhau
                   setNeedsVerification(false); 
                   setRetryCount(prev => prev + 1); 
-                  setIsRetrying(false);
+                  if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
                 }}
-                disabled={isRetrying}
-                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: isRetrying ? 'wait' : 'pointer', fontSize: '13px', opacity: isRetrying ? 0.5 : 1 }}
+                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
               >
-                {isRetrying ? "Đang tải..." : "2. Đã xong, Tải lại"}
+                Tải lại
               </button>
             </div>
           </div>
         )}
 
-        {isTiktok || (useEmbedFallback && embedSrc) ? (
-          <div className="webview-container" style={{ 
-            backgroundPosition: 'center' 
-          }}>
-            {inView ? (
-              <>
-                <iframe 
-                  ref={iframeRef}
-                  src={isTiktok ? video.file_url : embedSrc}
-                  className="webview-element"
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  allow="autoplay"
-                />
-                {isTiktok && <div className="click-overlay" onClick={togglePlay} />}
-              </>
-            ) : null}
-          </div>
-        ) : finalMp4Url && !useEmbedFallback ? (
-          <div className="video-element iframe-wrapper" style={{ 
-            position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center',
-            backgroundImage: `url(${video.thumb_url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}>
-            {inView ? (
-              <video 
-                key={retryCount}
-                id={"video-" + video.id}
-                ref={videoRef}
-                className="video-element"
-                preload="metadata"
-                loop
-                muted={isMuted}
-                autoPlay
-                playsInline
-                referrerPolicy="no-referrer"
-                onClick={togglePlay}
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                style={{ position: 'relative', zIndex: 1 }}
-                onError={() => {
-                  console.log("MP4 load failed");
-                  setNeedsVerification(true);
-                }}
+        <div className="webview-container" style={{ 
+          backgroundPosition: 'center',
+          backgroundImage: `url(${video.thumb_url})`,
+          backgroundSize: 'cover'
+        }}>
+          {inView ? (
+            <>
+              <iframe 
+                ref={iframeRef}
+                src={isTiktok ? video.file_url : `https://xnhau.ink/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`}
+                className="webview-element"
+                style={{ width: '100%', height: '100%', border: 'none', opacity: isReady ? 1 : 0, transition: 'opacity 0.3s', zIndex: 1 }}
+                allow="autoplay"
+                onLoad={() => setIsReady(true)}
+                onError={() => setNeedsVerification(true)}
               />
-            ) : null}
-          </div>
-        ) : (
-          <div style={{ width: '100%', height: '100%', backgroundColor: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', gap: '12px' }}>
-            <span style={{ fontSize: '16px' }}>Video bị chặn hoặc không tìm thấy (CORS)</span>
-            <button 
-              className="retry-btn"
-              disabled={isRetrying}
-              style={{ padding: '8px 24px', background: isRetrying ? '#555' : 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: isRetrying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (isRetrying) return; // Don't require finalMp4Url because we might retry when it's null
-                
-                setIsRetrying(true);
-                setRetryCount(Date.now());
-                setResolvedMp4Url(null); // Force a new fetch from proxy
-                
-                setTimeout(() => {
-                  setUseEmbedFallback(false);
-                  setNeedsVerification(false); // Also clear verification overlay just in case
-                  setIsRetrying(false);
-                }, 300);
-              }}
-            >
-              {isRetrying ? 'Đang tải lại...' : 'Tải lại video'}
-            </button>
-          </div>
-        )}
+              <div className="click-overlay" onClick={togglePlay} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, cursor: 'pointer' }} />
+            </>
+          ) : null}
+        </div>
         
-        {/* Floating Info & Controls container */}
-        <div className="bottom-controls-container">
+        <div className="bottom-controls-container" style={{ zIndex: 11 }}>
           <div className="floating-info">
             <div className="user-nickname">{video.user.nickname}</div>
             <div className="video-desc">{video.description}</div>
@@ -501,43 +434,30 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             </div>
           </div>
           
-          {/* Custom Player Controls for native MP4 only */}
-          {!isTiktok && !useEmbedFallback && finalMp4Url && (
-            <div className="player-controls">
-              <div className="play-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
-                {playing ? <Pause size={20} color="white" /> : <Play size={20} color="white" />}
-              </div>
-              <div className="time-display">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </div>
-              <div className="progress-bar-container">
-                <input 
-                  type="range" 
-                  min="0" 
-                  max={duration || 100} 
-                  value={currentTime} 
-                  onChange={handleSeek}
-                  onClick={(e) => e.stopPropagation()}
-                  className="progress-bar"
-                />
-              </div>
-              <div className="volume-control">
-                <div className="mute-btn" onClick={toggleMute}>
-                  {isMuted || volume === 0 ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.05"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  onClick={(e) => e.stopPropagation()}
-                  className="volume-slider"
-                />
+          <div className="player-controls">
+            <div className="play-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
+              {playing ? <Pause size={20} color="white" /> : <Play size={20} color="white" />}
+            </div>
+            <div className="time-display">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
+            <div className="progress-bar-container">
+              <input 
+                type="range" 
+                min="0" 
+                max={duration || 100} 
+                value={currentTime} 
+                onChange={() => {}} /* Cannot seek iframe easily */
+                onClick={(e) => e.stopPropagation()}
+                className="progress-bar"
+              />
+            </div>
+            <div className="volume-control">
+              <div className="mute-btn" onClick={toggleMute}>
+                {globalMuted || globalVolume === 0 ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
