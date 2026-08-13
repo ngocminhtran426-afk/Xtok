@@ -1,302 +1,74 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Heart, MessageCircle, Share2, Music, Plus, Bookmark, Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { useInView } from 'react-intersection-observer';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Heart, MessageCircle, Share2, Music, Pause, Play, Volume2, VolumeX, Plus, Bookmark } from 'lucide-react';
+import Hls from 'hls.js'; // Not used but kept for Tiktok if needed
 
-let globalMuted = true;
-let globalVolume = 1; // Default to 1 so when unmuted, it has volume
-
-const VideoCard = ({ video, isActive, onVideoEnd }) => {
+const VideoCard = ({ video, inView, prefetchInView, setRefs, onMuteChange, globalMuted, globalVolume, onVolumeChange }) => {
   const [playing, setPlaying] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(globalVolume);
-  const [isMuted, setIsMuted] = useState(globalMuted);
-  const [resolvedMp4Url, setResolvedMp4Url] = useState(null);
-  const [useEmbedFallback, setUseEmbedFallback] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const videoRef = useRef(null);
-  const bgVideoRef = useRef(null);
-  const hasMarkedSeen = useRef(false);
-  const { user } = useAuth();
-  
-  // Intersection Observer to handle autoplay
-  const { ref, inView } = useInView({
-    threshold: 0.6, // Play when 60% of the video is visible
-  });
-
-  // Intersection Observer to handle prefetching (fetch when within 2000px)
-  const { ref: prefetchRef, inView: prefetchInView } = useInView({
-    rootMargin: '2000px 0px',
-    triggerOnce: true
-  });
-
-  const setRefs = React.useCallback(
-    (node) => {
-      ref(node);
-      prefetchRef(node);
-    },
-    [ref, prefetchRef]
-  );
-
-  useEffect(() => {
-    let seenTimer;
-    if (inView) {
-      if (videoRef.current) {
-        // Cập nhật lại volume/muted trong trường hợp video vừa mount
-        videoRef.current.muted = globalMuted;
-        videoRef.current.volume = globalMuted ? 0 : globalVolume;
-        videoRef.current.play().catch(e => console.log('Autoplay blocked', e));
-      }
-      if (bgVideoRef.current) {
-        bgVideoRef.current.muted = true;
-        bgVideoRef.current.play().catch(e => console.log('Bg autoplay blocked', e));
-      }
-      setPlaying(true);
-      
-      // Mark as seen after watching for 3 seconds
-      if (user && !hasMarkedSeen.current) {
-        seenTimer = setTimeout(() => {
-          axios.post('/api/videos/seen', { video_id: video.id })
-            .catch(e => console.log('Failed to log watch history:', e));
-          hasMarkedSeen.current = true;
-        }, 3000);
-      }
-    } else {
-      videoRef.current?.pause();
-      bgVideoRef.current?.pause();
-      setPlaying(false);
-      if (seenTimer) clearTimeout(seenTimer);
-    }
-    
-    return () => {
-      if (seenTimer) clearTimeout(seenTimer);
-    };
-  }, [inView, video.id, user]);
-
-  useEffect(() => {
-    if (retryCount > 0 && videoRef.current && inView) {
-      videoRef.current.play().catch(e => console.log('Autoplay blocked after retry', e));
-    }
-  }, [retryCount, inView, resolvedMp4Url]);
-
   const iframeRef = useRef(null);
-
-  // Phân loại Link Video
-  const isTiktok = video.file_url?.includes('tiktok.com');
-  const cdnDomain = localStorage.getItem('xnhau_cdnDomain') || 'https://m.xnhau.ink';
-  const mainDomain = localStorage.getItem('xnhau_mainDomain') || 'https://xnhau.ink';
-
-  let rawMp4Url = '';
-  let embedSrc = '';
-
-  if (video.file_url?.startsWith('xnhau:')) {
-    // Dữ liệu mới lưu dưới dạng xnhau:ID
-    const id = parseInt(video.file_url.split(':')[1], 10);
-    if (!isNaN(id)) {
-      embedSrc = `${mainDomain}/embed/${id}`;
-    }
-  } else if (video.file_url?.includes('<iframe')) {
-    // Tương thích ngược với dữ liệu cũ (chứa thẻ iframe)
-    embedSrc = video.file_url.match(/src="([^"]+)"/)?.[1] || '';
-    if (embedSrc) {
-      embedSrc = embedSrc.replace(/^https?:\/\/[^\/]+/, mainDomain);
-      const matchId = embedSrc.match(/\/embed\/(\d+)/);
-      if (matchId) {
-        const id = parseInt(matchId[1], 10);
-        embedSrc = `${mainDomain}/embed/${id}`;
-      }
-    }
-  } else if (!isTiktok && video.file_url) {
-    rawMp4Url = video.file_url;
-  }
-
-  // Fetch dynamic MP4 URL with token
-  useEffect(() => {
-    // Chỉ prefetch khi video nằm trong khoảng 2000px (sắp hiển thị)
-    if (!prefetchInView || isTiktok || useEmbedFallback || rawMp4Url || resolvedMp4Url) return;
-    
-    let videoId = null;
-    if (video.file_url?.startsWith('xnhau:')) {
-      videoId = video.file_url.split(':')[1];
-    } else if (video.file_url?.includes('<iframe')) {
-      const matchId = video.file_url.match(/\/embed\/(\d+)/);
-      if (matchId) videoId = matchId[1];
-    }
-
-    if (videoId) {
-      const targetUrl = `https://xnhau.ink/embed/${videoId}`;
-      const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
-      
-      const handleMessage = (event) => {
-        if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
-          window.removeEventListener("message", handleMessage);
-          console.log("[VideoCard] Proxy result for", videoId, ":", event.data);
-          
-          if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
-            alert("⚠️ LỖI KẾT NỐI EXTENSION ⚠️\n\nExtension vừa được cập nhật nhưng trang web chưa nhận diện được.\n\nVUI LÒNG LÀM THEO 2 BƯỚC:\n1. F5 (Tải lại) trang web XTok này.\n2. Đóng tab xác minh cũ, bấm Nút Đỏ để mở tab xác minh mới.");
-            setNeedsVerification(true);
-          } else if (event.data.error === "No xnhau tab open") {
-            alert("⚠️ LỖI: BẠN ĐÃ ĐÓNG TAB XÁC MINH QUÁ SỚM! ⚠️\n\nVui lòng bấm lại Nút Đỏ, đợi nó tải xong video rồi để nguyên tab đó (KHÔNG ĐƯỢC ĐÓNG), sau đó quay lại trang này bấm Nút Đen.");
-            setNeedsVerification(true);
-          } else if (event.data.error === "CAPTCHA") {
-            setNeedsVerification(true);
-          } else if (event.data.error === "NO_MP4") {
-            setNeedsVerification(true);
-          } else if (event.data.mp4Url) {
-            setResolvedMp4Url(event.data.mp4Url);
-            setNeedsVerification(false);
-          } else {
-            setNeedsVerification(true);
-          }
-        }
-      };
-      
-      window.addEventListener("message", handleMessage);
-      window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
-      
-      // Timeout fallback in case extension is not running
-      const timeoutFallback = setTimeout(() => {
-        window.removeEventListener("message", handleMessage);
-        if (!resolvedMp4Url) {
-          console.warn("Extension did not respond in time for", videoId);
-          setNeedsVerification(true);
-        }
-      }, 35000); // 35 seconds to allow queue to process
-      
-      return () => {
-        window.removeEventListener("message", handleMessage);
-        clearTimeout(timeoutFallback);
-      };
-    }
-  }, [prefetchInView, video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url, retryCount]);
   
-  const finalMp4Url = rawMp4Url || resolvedMp4Url;
+  const isTiktok = video.file_url?.includes('tiktok.com');
 
-  const togglePlay = () => {
-    setPlaying(!playing);
-    if (isTiktok && iframeRef.current) {
-      if (playing) iframeRef.current.executeJavaScript(`document.querySelector('video')?.pause();`);
-      else iframeRef.current.executeJavaScript(`document.querySelector('video')?.play();`);
-    } else if (videoRef.current) {
-      if (playing) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
+  // Extract ID from xnhau.ink links
+  const xnhauId = useMemo(() => {
+    if (isTiktok) return null;
+    let id = null;
+    if (video.file_url?.startsWith('xnhau:')) {
+      id = video.file_url.split(':')[1];
+    } else if (video.file_url?.includes('/embed/')) {
+      const match = video.file_url.match(/\/embed\/(\d+)/);
+      if (match) id = match[1];
     }
-  };
+    return id;
+  }, [video.file_url, isTiktok]);
 
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const [videoStyles, setVideoStyles] = useState(null);
-  const [isReady, setIsReady] = useState(false);
-
-  const calculateDimensions = React.useCallback((width, height) => {
-    const maxH = window.innerHeight - 32; // Khôi phục chiều cao tối đa để video dọc full màn hình
-    const availableW = window.innerWidth - 550; // Giữ nguyên việc bóp chiều ngang để video ngang nhỏ lại
-    const maxW = Math.max(300, availableW);
-    
-    let targetW = maxW;
-    let targetH = targetW * (height / width);
-    
-    if (targetH > maxH) {
-      targetH = maxH;
-      targetW = targetH * (width / height);
-    }
-    setVideoStyles({ width: `${targetW}px`, height: `${targetH}px` });
-    setIsReady(true);
-  }, []);
+  const embedSrc = isTiktok ? video.file_url : (xnhauId ? `https://xnhau.ink/embed/${xnhauId}` : '');
 
   useEffect(() => {
-    // Nếu là Webview/Iframe thì không có metadata, fallback về 9:16
-    if (isTiktok || useEmbedFallback) {
-      calculateDimensions(720, 1280);
-    }
-  }, [isTiktok, useEmbedFallback, calculateDimensions]);
-
-  useEffect(() => {
-    let timeoutId;
-    const handleResize = () => {
-      // Bỏ qua resize tạm thời, hoặc có thể reload
-    };
-    
-    window.addEventListener('resize', handleResize);
-    
-    // Sync volume across VideoCards
-    const handleGlobalVolumeChange = (e) => {
-      const { vol, muted } = e.detail;
-      setVolume(vol);
-      setIsMuted(muted);
-      if (videoRef.current) {
-        videoRef.current.volume = vol;
-        videoRef.current.muted = muted;
+    const handleVideoState = (event) => {
+      if (event.data && event.data.type === "XTOK_VIDEO_STATE") {
+        setCurrentTime(event.data.currentTime || 0);
+        setDuration(event.data.duration || 0);
+        setPlaying(!event.data.paused);
       }
     };
-    window.addEventListener('syncvolume', handleGlobalVolumeChange);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('syncvolume', handleGlobalVolumeChange);
-      clearTimeout(timeoutId);
-    };
+    window.addEventListener("message", handleVideoState);
+    return () => window.removeEventListener("message", handleVideoState);
   }, []);
 
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      calculateDimensions(videoRef.current.videoWidth || 720, videoRef.current.videoHeight || 1280);
+  const togglePlay = useCallback(() => {
+    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
+    if (playing) {
+      iframeRef.current.contentWindow.postMessage({ type: "XTOK_PAUSE" }, "*");
+      setPlaying(false);
+    } else {
+      iframeRef.current.contentWindow.postMessage({ type: "XTOK_PLAY" }, "*");
+      setPlaying(true);
     }
-  };
+  }, [playing]);
 
-  const handleSeek = (e) => {
-    const time = Number(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
+  // Volume control syncing
+  useEffect(() => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({ type: "XTOK_MUTE", value: globalMuted }, "*");
     }
-  };
+  }, [globalMuted]);
 
-  const handleVolumeChange = (e) => {
-    const val = Number(e.target.value);
-    const muted = val === 0;
-    setVolume(val);
-    setIsMuted(muted);
-    globalVolume = val;
-    globalMuted = muted;
-    if (videoRef.current) {
-      videoRef.current.volume = val;
-      videoRef.current.muted = muted;
+  useEffect(() => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (!inView) {
+        iframeRef.current.contentWindow.postMessage({ type: "XTOK_PAUSE" }, "*");
+        setPlaying(false);
+      } else if (!needsVerification) {
+        iframeRef.current.contentWindow.postMessage({ type: "XTOK_PLAY" }, "*");
+        setPlaying(true);
+      }
     }
-    window.dispatchEvent(new CustomEvent('syncvolume', { detail: { vol: val, muted } }));
-  };
-
-  const toggleMute = (e) => {
-    e.stopPropagation();
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    globalMuted = newMuted;
-    
-    // Khôi phục mức âm lượng cũ hoặc mặc định là 1 nếu mở tiếng
-    const newVol = newMuted ? 0 : (globalVolume === 0 ? 1 : globalVolume);
-    if (!newMuted) globalVolume = newVol;
-
-    setVolume(newVol);
-    if (videoRef.current) {
-      videoRef.current.muted = newMuted;
-      videoRef.current.volume = newVol;
-    }
-    window.dispatchEvent(new CustomEvent('syncvolume', { detail: { vol: newVol, muted: newMuted } }));
-  };
+  }, [inView, needsVerification, retryCount]);
 
   const formatTime = (timeInSeconds) => {
     const m = Math.floor(timeInSeconds / 60).toString().padStart(2, '0');
@@ -311,7 +83,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         const style = document.createElement('style');
         style.textContent = \`
           body, html { margin: 0; padding: 0; overflow: hidden; background: #000; }
-          /* Ẩn toàn bộ UI của Tiktok Web */
           div[class*="DivBottomContainer"], div[class*="DivHeaderContainer"], div[class*="DivSideBarContainer"], div[class*="DivInfoContainer"], div[class*="DivVideoWrapper"] > div:not(video), header, svg, a, button { display: none !important; opacity: 0 !important; pointer-events: none !important; }
           video { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; object-fit: contain !important; z-index: 9999 !important; display: block !important; outline: none !important; border: none !important; pointer-events: none !important; }
         \`;
@@ -330,44 +101,11 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     `);
   };
 
-  // Ẩn nội dung chờ lấy được video metadata thật để không bị layout shift
-  const currentStyles = videoStyles || { width: '400px', height: 'calc(100vh - 32px)' };
-
-  // Khởi tạo HLS.js nếu video là định dạng m3u8
-  useEffect(() => {
-    if (inView && finalMp4Url && videoRef.current) {
-      const cacheBustedUrl = finalMp4Url + (finalMp4Url.includes('?') ? '&' : '?') + 'retry=' + retryCount;
-      
-      if (finalMp4Url.includes('.m3u8') || finalMp4Url.includes('m3u8')) {
-        if (window.Hls && window.Hls.isSupported()) {
-          const hls = new window.Hls();
-          hls.loadSource(cacheBustedUrl);
-          hls.attachMedia(videoRef.current);
-          
-          hls.on(window.Hls.Events.ERROR, function (event, data) {
-            if (data.fatal) {
-              console.log("HLS fatal error:", data);
-              setNeedsVerification(true);
-            }
-          });
-
-          return () => {
-            hls.destroy();
-          };
-        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-          videoRef.current.src = cacheBustedUrl;
-        }
-      } else {
-        videoRef.current.src = cacheBustedUrl;
-      }
-    }
-  }, [finalMp4Url, inView, retryCount]);
-
   return (
     <div className="video-card-container" ref={setRefs}>
       <div 
         className="video-wrapper" 
-        style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', transition: 'opacity 0.3s ease-in-out' }}
+        style={{ width: '400px', height: 'calc(100vh - 32px)', position: 'relative', overflow: 'hidden', borderRadius: '12px', transition: 'opacity 0.3s ease-in-out' }}
       >
         <div 
           style={{
@@ -410,19 +148,30 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
           backgroundSize: 'cover'
         }}>
           {inView ? (
-            <>
+            isTiktok ? (
+              <webview 
+                ref={iframeRef}
+                src={embedSrc} 
+                className="webview-element" 
+                style={{ width: '100%', height: '100%', border: 'none', opacity: isReady ? 1 : 0, transition: 'opacity 0.3s' }}
+                allowpopups="true" 
+                webpreferences="contextIsolation=no" 
+                onDomReady={handleTiktokReady}
+                onLoadCommit={() => setIsReady(true)}
+              />
+            ) : (
               <iframe 
                 ref={iframeRef}
-                src={isTiktok ? video.file_url : `https://xnhau.ink/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`}
+                src={embedSrc}
                 className="webview-element"
                 style={{ width: '100%', height: '100%', border: 'none', opacity: isReady ? 1 : 0, transition: 'opacity 0.3s', zIndex: 1 }}
                 allow="autoplay"
                 onLoad={() => setIsReady(true)}
                 onError={() => setNeedsVerification(true)}
               />
-              <div className="click-overlay" onClick={togglePlay} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, cursor: 'pointer' }} />
-            </>
+            )
           ) : null}
+          <div className="click-overlay" onClick={togglePlay} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, cursor: 'pointer' }} />
         </div>
         
         <div className="bottom-controls-container" style={{ zIndex: 11 }}>
@@ -453,7 +202,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               />
             </div>
             <div className="volume-control">
-              <div className="mute-btn" onClick={toggleMute}>
+              <div className="mute-btn" onClick={(e) => { e.stopPropagation(); onMuteChange(!globalMuted); }}>
                 {globalMuted || globalVolume === 0 ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
               </div>
             </div>
@@ -461,7 +210,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         </div>
       </div>
 
-      {/* Floating Actions (Right Side) */}
       <div className="floating-actions" style={{ opacity: isReady ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}>
         <div className="action-avatar">
           <img src={video.user.avatar} alt="avatar" />

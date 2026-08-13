@@ -51,11 +51,13 @@ if (window.location.hostname.includes('xnhau')) {
     const style = document.createElement('style');
     style.textContent = `
       body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; }
-      /* Ẩn mọi thứ của player mặc định (vjs, button, ad) */
-      .vjs-control-bar, .vjs-big-play-button, .vjs-loading-spinner, .vjs-text-track-display, .vjs-poster, #bttv, .ad-banner { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-      /* Làm video to tràn viền */
+      /* Ẩn mọi thứ của player mặc định (bao gồm quảng cáo skip in 1) */
+      body * { opacity: 0 !important; pointer-events: none !important; display: none !important; }
+      
+      /* Làm video to tràn viền và BẮT BUỘC HIỂN THỊ */
       video, .vjs-tech { 
         display: block !important; 
+        opacity: 1 !important;
         position: absolute !important; 
         top: 0 !important; 
         left: 0 !important; 
@@ -67,7 +69,7 @@ if (window.location.hostname.includes('xnhau')) {
         pointer-events: none !important; /* Để click xuyên qua iframe cho app cha xử lý */
       }
       /* Nếu Cloudflare Captcha hiện, phải cho phép hiển thị để người dùng giải */
-      #cf-wrapper, #cf-turnstile, .cf-turnstile, iframe[src*="cloudflare"] { 
+      #cf-wrapper, #cf-wrapper *, #cf-turnstile, #cf-turnstile *, .cf-turnstile, .cf-turnstile *, iframe[src*="cloudflare"] { 
         display: block !important; 
         opacity: 1 !important; 
         z-index: 999999 !important; 
