@@ -1,15 +1,26 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Heart, MessageCircle, Share2, Music, Pause, Play, Volume2, VolumeX, Plus, Bookmark } from 'lucide-react';
+import { useInView } from 'react-intersection-observer';
 
-const VideoCard = ({ video, inView, prefetchInView, setRefs, onMuteChange, globalMuted, globalVolume, onVolumeChange }) => {
+const VideoCard = ({ video }) => {
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [globalMuted, setGlobalMuted] = useState(true);
+  const [globalVolume, setGlobalVolume] = useState(1);
   const iframeRef = useRef(null);
   
+  const { ref: inViewRef, inView } = useInView({ threshold: 0.5 });
+  const { ref: prefetchRef, inView: prefetchInView } = useInView({ rootMargin: '2000px 0px' });
+  
+  const setRefs = useCallback((node) => {
+    inViewRef(node);
+    prefetchRef(node);
+  }, [inViewRef, prefetchRef]);
+
   const isTiktok = video.file_url?.includes('tiktok.com');
 
   // Extract ID from xnhau.ink links
@@ -207,7 +218,12 @@ const VideoCard = ({ video, inView, prefetchInView, setRefs, onMuteChange, globa
               />
             </div>
             <div className="volume-control">
-              <div className="mute-btn" onClick={(e) => { e.stopPropagation(); onMuteChange(!globalMuted); }}>
+              <div className="mute-btn" onClick={(e) => { 
+                e.stopPropagation(); 
+                const newMuted = !globalMuted;
+                setGlobalMuted(newMuted);
+                window.dispatchEvent(new CustomEvent('syncvolume', { detail: { vol: globalVolume, muted: newMuted } }));
+              }}>
                 {globalMuted || globalVolume === 0 ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
               </div>
             </div>
