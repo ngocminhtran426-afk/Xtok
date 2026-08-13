@@ -50,15 +50,14 @@ if (window.location.hostname.includes('xnhau')) {
   if (window !== window.top) {
     const style = document.createElement('style');
     style.textContent = `
-      body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; }
-      /* Ẩn mọi thứ của player mặc định nhưng CÓ THỂ cho phép thẻ con hiển thị lại (dùng visibility) */
-      body * { visibility: hidden !important; pointer-events: none !important; background: transparent !important; }
+      /* Chỉ ẩn các thành phần dư thừa, giữ nguyên cấu trúc DOM để player hoạt động bình thường */
+      body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000 !important; }
       
-      /* Làm video to tràn viền, hiện đè lên trên và khôi phục visibility */
+      /* Ẩn UI của player */
+      .vjs-control-bar, .vjs-big-play-button, .vjs-loading-spinner, .vjs-text-track-display, .vjs-poster, .vjs-overlay, .vjs-hidden, .ad-banner { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+      
+      /* Làm video to tràn viền */
       video, .vjs-tech { 
-        visibility: visible !important;
-        display: block !important; 
-        opacity: 1 !important;
         position: fixed !important; 
         top: 0 !important; 
         left: 0 !important; 
@@ -66,17 +65,11 @@ if (window.location.hostname.includes('xnhau')) {
         height: 100vh !important; 
         object-fit: contain !important; 
         z-index: 2147483647 !important; 
-        background: transparent !important;
-        pointer-events: none !important; /* Để click xuyên qua iframe cho app cha xử lý */
+        pointer-events: none !important; /* Click pass through */
       }
-      /* Ẩn các nút điều khiển mặc định hoàn toàn */
-      .vjs-control-bar, .vjs-big-play-button, .vjs-loading-spinner, .vjs-text-track-display, .vjs-poster, .vjs-overlay, .vjs-hidden { display: none !important; }
       
-      /* Nếu Cloudflare Captcha hiện, phải cho phép hiển thị để người dùng giải */
+      /* Đảm bảo Captcha hiển thị trên cùng */
       #cf-wrapper, #cf-wrapper *, #cf-turnstile, #cf-turnstile *, .cf-turnstile, .cf-turnstile *, iframe[src*="cloudflare"] { 
-        visibility: visible !important;
-        display: block !important; 
-        opacity: 1 !important; 
         z-index: 2147483647 !important; 
         pointer-events: auto !important; 
       }
