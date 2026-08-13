@@ -397,10 +397,25 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 1. Mở trang xác minh
               </button>
               <button 
-                onClick={() => { setNeedsVerification(false); setRetryCount(prev => prev + 1); }}
-                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+                onClick={async (e) => { 
+                  e.stopPropagation();
+                  if (isRetrying) return;
+                  setIsRetrying(true);
+                  if (finalMp4Url) {
+                    try {
+                      await fetch(finalMp4Url, { mode: 'no-cors', cache: 'reload' });
+                    } catch (err) {
+                      console.log("Bypass cache failed", err);
+                    }
+                  }
+                  setNeedsVerification(false); 
+                  setRetryCount(prev => prev + 1); 
+                  setIsRetrying(false);
+                }}
+                disabled={isRetrying}
+                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: isRetrying ? 'wait' : 'pointer', fontSize: '13px', opacity: isRetrying ? 0.5 : 1 }}
               >
-                2. Đã xong, Tải lại
+                {isRetrying ? "Đang tải..." : "2. Đã xong, Tải lại"}
               </button>
             </div>
           </div>
