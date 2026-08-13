@@ -59,8 +59,8 @@ function updateDynamicRule(cookieValue) {
       ]
     },
     condition: {
-      urlFilter: 'xnhau',
-      resourceTypes: ['sub_frame', 'media', 'xmlhttprequest', 'other', 'image']
+      regexFilter: "(get_file|\\.mp4|\\.m3u8)",
+      resourceTypes: ['media', 'xmlhttprequest', 'other']
     }
   };
 
