@@ -172,7 +172,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         clearTimeout(timeoutFallback);
       };
     }
-  }, [prefetchInView, video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url]);
+  }, [prefetchInView, video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url, retryCount]);
   
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
@@ -393,7 +393,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 1. Mở trang xác minh
               </button>
               <button 
-                onClick={() => setRetryCount(prev => prev + 1)}
+                onClick={() => { setNeedsVerification(false); setRetryCount(prev => prev + 1); }}
                 style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
               >
                 2. Đã xong, Tải lại
