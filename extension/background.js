@@ -93,20 +93,24 @@ function processQueue() {
     const xnhauTabs = tabs.filter(t => t.url && t.url.includes('xnhau'));
     if (xnhauTabs.length > 0) {
       chrome.tabs.sendMessage(xnhauTabs[0].id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
-        if (chrome.runtime.lastError) {
-          sendResponse({ mp4Url: null, error: "Tab proxy failed" });
-        } else {
-          sendResponse(response);
+        try {
+          if (chrome.runtime.lastError) {
+            sendResponse({ mp4Url: null, error: "Tab proxy failed" });
+          } else {
+            sendResponse(response);
+          }
+        } catch (e) {
+          console.error("Tab already closed, cannot send response", e);
         }
         
-        // Nghỉ 1 giây giữa các request để tránh bị hệ thống Anti-bot block do rate limit
+        // Nghỉ 300ms giữa các request để tránh bị hệ thống Anti-bot block do rate limit
         setTimeout(() => {
           isFetching = false;
           processQueue();
-        }, 1000);
+        }, 300);
       });
     } else {
-      sendResponse({ mp4Url: null, error: "No xnhau tab open" });
+      try { sendResponse({ mp4Url: null, error: "No xnhau tab open" }); } catch (e) {}
       isFetching = false;
       processQueue();
     }

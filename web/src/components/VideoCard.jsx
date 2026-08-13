@@ -30,6 +30,20 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     threshold: 0.6, // Play when 60% of the video is visible
   });
 
+  // Intersection Observer to handle prefetching (fetch when within 2000px)
+  const { ref: prefetchRef, inView: prefetchInView } = useInView({
+    rootMargin: '2000px 0px',
+    triggerOnce: true
+  });
+
+  const setRefs = React.useCallback(
+    (node) => {
+      ref(node);
+      prefetchRef(node);
+    },
+    [ref, prefetchRef]
+  );
+
   useEffect(() => {
     let seenTimer;
     if (inView) {
@@ -104,7 +118,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
   // Fetch dynamic MP4 URL with token
   useEffect(() => {
-    if (isTiktok || useEmbedFallback || rawMp4Url || resolvedMp4Url) return;
+    // Chỉ prefetch khi video nằm trong khoảng 2000px (sắp hiển thị)
+    if (!prefetchInView || isTiktok || useEmbedFallback || rawMp4Url || resolvedMp4Url) return;
     
     let videoId = null;
     if (video.file_url?.startsWith('xnhau:')) {
@@ -144,12 +159,20 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
       
       // Timeout fallback in case extension is not running
-      setTimeout(() => {
+      const timeoutFallback = setTimeout(() => {
         window.removeEventListener("message", handleMessage);
-        setResolvedMp4Url(prev => prev || fallbackUrl);
-      }, 60000);
+        if (!resolvedMp4Url) {
+          console.warn("Extension did not respond in time for", videoId);
+          setNeedsVerification(true);
+        }
+      }, 35000); // 35 seconds to allow queue to process
+      
+      return () => {
+        window.removeEventListener("message", handleMessage);
+        clearTimeout(timeoutFallback);
+      };
     }
-  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url, inView, retryCount]);
+  }, [prefetchInView, video.file_url, isTiktok, useEmbedFallback, rawMp4Url, resolvedMp4Url]);
   
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
@@ -303,7 +326,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         setTimeout(() => clearInterval(tryPlay), 15000);
       })();
     `);
-    setVolume(newVol);
   };
 
   // Ẩn nội dung chờ lấy được video metadata thật để không bị layout shift
@@ -338,7 +360,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
   }, [finalMp4Url, inView, retryCount]);
 
   return (
-    <div className="video-card-container" ref={ref}>
+    <div className="video-card-container" ref={setRefs}>
       <div 
         className="video-wrapper" 
         style={{ ...currentStyles, position: 'relative', overflow: 'hidden', borderRadius: '12px', opacity: (isReady || needsVerification) ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
