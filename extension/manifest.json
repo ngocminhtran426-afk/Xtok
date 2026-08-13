@@ -10,10 +10,7 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.xnhau.loan/*",
-    "*://*.xnhau.tech/*",
-    "*://*.xnhau.ink/*",
-    "*://xnhau.ink/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
