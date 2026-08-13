@@ -51,32 +51,53 @@ if (window.location.hostname.includes('xnhau')) {
     const style = document.createElement('style');
     style.textContent = `
       body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; }
-      /* Ẩn mọi thứ của player mặc định (bao gồm quảng cáo skip in 1) */
-      body * { opacity: 0 !important; pointer-events: none !important; display: none !important; }
+      /* Ẩn mọi thứ của player mặc định nhưng CÓ THỂ cho phép thẻ con hiển thị lại (dùng visibility) */
+      body * { visibility: hidden !important; pointer-events: none !important; background: transparent !important; }
       
-      /* Làm video to tràn viền và BẮT BUỘC HIỂN THỊ */
+      /* Làm video to tràn viền, hiện đè lên trên và khôi phục visibility */
       video, .vjs-tech { 
+        visibility: visible !important;
         display: block !important; 
         opacity: 1 !important;
-        position: absolute !important; 
+        position: fixed !important; 
         top: 0 !important; 
         left: 0 !important; 
         width: 100vw !important; 
         height: 100vh !important; 
         object-fit: contain !important; 
-        z-index: 9999 !important; 
+        z-index: 2147483647 !important; 
         background: transparent !important;
         pointer-events: none !important; /* Để click xuyên qua iframe cho app cha xử lý */
       }
+      /* Ẩn các nút điều khiển mặc định hoàn toàn */
+      .vjs-control-bar, .vjs-big-play-button, .vjs-loading-spinner, .vjs-text-track-display, .vjs-poster, .vjs-overlay, .vjs-hidden { display: none !important; }
+      
       /* Nếu Cloudflare Captcha hiện, phải cho phép hiển thị để người dùng giải */
       #cf-wrapper, #cf-wrapper *, #cf-turnstile, #cf-turnstile *, .cf-turnstile, .cf-turnstile *, iframe[src*="cloudflare"] { 
+        visibility: visible !important;
         display: block !important; 
         opacity: 1 !important; 
-        z-index: 999999 !important; 
+        z-index: 2147483647 !important; 
         pointer-events: auto !important; 
       }
     `;
     document.documentElement.appendChild(style);
+
+    // Auto-skip ads script
+    setInterval(() => {
+      const skipBtn = document.querySelector('.vjs-ad-skip-button, .videoAdUiSkipButton, [class*="skip-button"]');
+      if (skipBtn) {
+        try { skipBtn.click(); } catch (e) {}
+      } else {
+        const elements = document.querySelectorAll('div, span, button, a');
+        for (const el of elements) {
+          const text = el.innerText?.toLowerCase() || '';
+          if ((text.includes('skip') || text.includes('bỏ qua')) && !text.includes('in') && el.offsetHeight > 0) {
+            try { el.click(); } catch (e) {}
+          }
+        }
+      }
+    }, 500);
 
     // Lắng nghe lệnh từ app cha (xtok-app)
     window.addEventListener("message", (event) => {

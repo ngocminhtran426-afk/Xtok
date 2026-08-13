@@ -16,11 +16,17 @@ const VideoCard = ({ video, inView, prefetchInView, setRefs, onMuteChange, globa
   const xnhauId = useMemo(() => {
     if (isTiktok) return null;
     let id = null;
-    if (video.file_url?.startsWith('xnhau:')) {
-      id = video.file_url.split(':')[1];
-    } else if (video.file_url?.includes('/embed/')) {
-      const match = video.file_url.match(/\/embed\/(\d+)/);
-      if (match) id = match[1];
+    if (video.file_url) {
+      if (video.file_url.startsWith('xnhau:')) {
+        id = video.file_url.split(':')[1];
+      } else {
+        // Find the 6-digit ID or any number block that looks like the ID
+        const matches = video.file_url.match(/(\d+)/g);
+        if (matches && matches.length > 0) {
+          // Usually the ID is the last or only number in the URL (e.g. /video/496593.mp4)
+          id = matches[matches.length - 1];
+        }
+      }
     }
     return id;
   }, [video.file_url, isTiktok]);
