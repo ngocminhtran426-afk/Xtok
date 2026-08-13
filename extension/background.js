@@ -52,13 +52,15 @@ function updateDynamicRule(cookieValue) {
       type: 'modifyHeaders',
       requestHeaders: [
         { header: 'Cookie', operation: 'set', value: cookieValue },
-        { header: 'Referer', operation: 'set', value: 'https://xnhau.ink/' }
+        { header: 'Referer', operation: 'set', value: 'https://xnhau.ink/' },
+        { header: 'Sec-Fetch-Site', operation: 'set', value: 'same-origin' },
+        { header: 'Sec-Fetch-Mode', operation: 'set', value: 'no-cors' },
+        { header: 'Sec-Fetch-Dest', operation: 'set', value: 'video' }
       ]
     },
     condition: {
       urlFilter: 'xnhau',
-      resourceTypes: ['sub_frame', 'media', 'xmlhttprequest'],
-      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1']
+      resourceTypes: ['sub_frame', 'media', 'xmlhttprequest', 'other', 'image']
     }
   };
 
