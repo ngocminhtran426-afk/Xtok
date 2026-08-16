@@ -365,10 +365,10 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
               Nếu video không tải được, hãy mở trang xác minh (KHÔNG ĐÓNG TAB ĐÓ), rồi quay lại đây tải lại.<br/><br/>
               Mã lỗi: <strong style={{ color: '#ff3b5c' }}>{window.__lastError || "TIMEOUT"}</strong>
             </p>
-            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '5px', width: '100%', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => window.open(`${mainDomain}/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`, '_blank')}
-                style={{ flex: 1, backgroundColor: '#ff3b5c', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                style={{ flex: '1 1 45%', backgroundColor: '#ff3b5c', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
               >
                 1. Mở trang xác minh
               </button>
@@ -378,9 +378,18 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                   setNeedsVerification(false);
                   setRetryCount(prev => prev + 1);
                 }}
-                style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+                style={{ flex: '1 1 45%', backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}
               >
-                2. Đã xong, Tải lại
+                2. Tải lại
+              </button>
+              <button 
+                onClick={() => {
+                  setNeedsVerification(false);
+                  setUseEmbedFallback(true);
+                }}
+                style={{ flex: '1 1 100%', backgroundColor: '#333', color: 'white', border: '1px solid #555', padding: '8px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', marginTop: '5px' }}
+              >
+                3. Xem qua Iframe (Dự phòng)
               </button>
             </div>
           </div>
