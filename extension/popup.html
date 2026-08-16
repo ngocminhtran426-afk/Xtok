@@ -5,7 +5,7 @@
   <title>xNhau Bypasser</title>
   <style>
     body {
-      width: 280px;
+      width: 320px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       padding: 15px;
       background: #121212;
@@ -18,26 +18,17 @@
       margin-top: 10px;
       text-align: center;
       font-weight: bold;
+      font-size: 13px;
     }
-    .status.active {
-      background: #4caf50;
-      color: white;
-    }
-    .status.inactive {
-      background: #f44336;
-      color: white;
-    }
+    .status.active { background: #4caf50; color: white; }
+    .status.inactive { background: #f44336; color: white; }
     h2 {
       margin-top: 0;
       font-size: 16px;
       text-align: center;
       color: #fe2c55;
     }
-    p {
-      font-size: 13px;
-      line-height: 1.4;
-      color: #aaa;
-    }
+    p { font-size: 12px; line-height: 1.4; color: #aaa; }
     button {
       width: 100%;
       padding: 8px;
@@ -49,44 +40,28 @@
       margin-top: 8px;
       font-size: 13px;
     }
-    .btn-primary {
-      background: #fe2c55;
-    }
-    .btn-primary:hover {
-      background: #e6284d;
-    }
-    .btn-secondary {
-      background: #333;
-      font-weight: normal;
-    }
-    .btn-secondary:hover {
-      background: #444;
-    }
-    .btn-save {
-      background: #4caf50;
-    }
-    .btn-save:hover {
-      background: #43a047;
-    }
+    .btn-primary { background: #fe2c55; }
+    .btn-primary:hover { background: #e6284d; }
+    .btn-secondary { background: #333; font-weight: normal; }
+    .btn-secondary:hover { background: #444; }
+    .btn-save { background: #4caf50; }
+    .btn-save:hover { background: #43a047; }
+    .btn-debug { background: #ff9800; }
+    .btn-debug:hover { background: #f57c00; }
 
-    /* Settings panel */
-    .settings-panel {
+    .settings-panel, .debug-panel {
       display: none;
       margin-top: 12px;
       padding-top: 12px;
       border-top: 1px solid #333;
     }
-    .settings-panel.show {
-      display: block;
-    }
-    .settings-panel h3 {
+    .settings-panel.show, .debug-panel.show { display: block; }
+    .settings-panel h3, .debug-panel h3 {
       margin: 0 0 10px 0;
       font-size: 14px;
       color: #fe2c55;
     }
-    .form-group {
-      margin-bottom: 10px;
-    }
+    .form-group { margin-bottom: 10px; }
     .form-group label {
       display: block;
       font-size: 11px;
@@ -103,10 +78,7 @@
       font-size: 12px;
       box-sizing: border-box;
     }
-    .form-group input:focus {
-      border-color: #fe2c55;
-      outline: none;
-    }
+    .form-group input:focus { border-color: #fe2c55; outline: none; }
     .save-msg {
       font-size: 11px;
       color: #4caf50;
@@ -114,6 +86,24 @@
       margin-top: 6px;
       display: none;
     }
+    #debugLog {
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 8px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 10px;
+      color: #0f0;
+      max-height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    #debugLog .err { color: #f44; }
+    #debugLog .warn { color: #ff9800; }
+    #debugLog .ok { color: #4caf50; }
+    #debugLog .info { color: #2196f3; }
   </style>
 </head>
 <body>
@@ -122,16 +112,18 @@
   
   <div id="statusBox" class="status inactive">Đang kiểm tra...</div>
   
-  <div id="debugBox" style="font-size: 10px; color: #888; margin: 10px 0; word-break: break-all;"></div>
-  
-  <button id="btnBypass" class="btn-primary">
-    🔓 Mở trang mồi Cloudflare
-  </button>
-  
-  <button id="btnSettings" class="btn-secondary">
-    ⚙️ Cài đặt tên miền
-  </button>
+  <button id="btnBypass" class="btn-primary">🔓 Mở trang mồi Cloudflare</button>
+  <button id="btnDebug" class="btn-debug">🔍 Chẩn đoán lỗi</button>
+  <button id="btnSettings" class="btn-secondary">⚙️ Cài đặt tên miền</button>
 
+  <!-- Debug Panel -->
+  <div id="debugPanel" class="debug-panel">
+    <h3>🔍 Kết quả chẩn đoán</h3>
+    <div id="debugLog"></div>
+    <button id="btnRunTest" class="btn-debug" style="margin-top:8px">▶ Chạy lại test</button>
+  </div>
+
+  <!-- Settings Panel -->
   <div id="settingsPanel" class="settings-panel">
     <h3>⚙️ Cấu hình tên miền</h3>
     <div class="form-group">
