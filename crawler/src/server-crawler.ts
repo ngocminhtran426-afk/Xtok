@@ -23,7 +23,37 @@ const tabs = [
 
 let isCrawling = false;
 
-// HTML Dashboard
+// Endpoint cho UptimeRobot (Bảo vệ bằng cách đặt lên đầu, không cần đăng nhập)
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+// Middleware Bảo Mật: Yêu cầu đăng nhập Admin cho toàn bộ hệ thống Dashboard
+app.use((req, res, next) => {
+  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+  // Lấy tài khoản/mật khẩu từ biến môi trường, hoặc dùng mặc định nếu chưa cài
+  const ADMIN_USER = process.env.CRAWLER_ADMIN_USER || 'admin';
+  const ADMIN_PASS = process.env.CRAWLER_ADMIN_PASS || '123456';
+
+  if (login === ADMIN_USER && password === ADMIN_PASS) {
+    return next();
+  }
+
+  res.set('WWW-Authenticate', 'Basic realm="XTok Crawler Secure Dashboard"');
+  res.status(401).send(`
+    <html lang="vi">
+    <body style="background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 50px;">
+      <h2 style="color: #fe2c55;">🚫 Truy cập bị từ chối</h2>
+      <p>Khu vực này chỉ dành riêng cho Admin quản trị.</p>
+      <p>Vui lòng đăng nhập với tài khoản hợp lệ!</p>
+    </body>
+    </html>
+  `);
+});
+
+// HTML Dashboard (Đã được bảo vệ)
 app.get('/', (req, res) => {
   const html = `
     <!DOCTYPE html>
@@ -77,10 +107,6 @@ app.get('/', (req, res) => {
   res.send(html);
 });
 
-// Endpoint cho UptimeRobot
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
 
 // Endpoint kích hoạt Crawler
 app.post('/start', async (req, res) => {
