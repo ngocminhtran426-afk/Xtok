@@ -62,5 +62,26 @@ Kịch bản này sẽ gạt bỏ mọi thứ dư thừa và **chỉ thiết l�
 
 *Để xem Bot đang cào được bao nhiêu video trên VPS, gõ lệnh:* `sudo pm2 logs xtok-crawler`
 
+---
+
+## ☁️ Hướng dẫn Tách Riêng Crawler Lên Tài Khoản Render Phụ (Clone)
+
+Để nhân đôi số giờ miễn phí (lên 1500 giờ/tháng) và giữ cho Web App chính không bị quá tải, bạn có thể triển khai Crawler như một **Web Dashboard độc lập** trên một tài khoản Render phụ:
+
+### Các Bước Triển Khai:
+1. Đăng nhập vào tài khoản Render phụ (clone).
+2. Tạo một **Web Service** mới, liên kết với kho Github XTok.
+3. Trong phần thiết lập, cấu hình như sau:
+   - **Root Directory**: `crawler`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm run start-crawler-server`
+4. Cài đặt **Environment Variables (Biến môi trường)**:
+   - `CREDENTIALS_B64`: (Bắt buộc) Mã Base64 của file kết nối Google Sheets.
+   - `TOKEN_B64`: (Bắt buộc) Mã Token Base64.
+   - `CRAWLER_ADMIN_USER`: (Tùy chọn) Tên đăng nhập Admin của bạn.
+   - `CRAWLER_ADMIN_PASS`: (Tùy chọn) Mật khẩu đăng nhập Admin của bạn.
+
+Sau khi Render chạy xong, bạn sẽ nhận được một đường link Web (vd: `xtok-crawler.onrender.com`). Chỉ cần đăng nhập tài khoản Admin, bạn sẽ thấy giao diện điều khiển Crawler siêu trực quan! Dùng link `/ping` dán vào **UptimeRobot** để giữ máy chủ sống 24/7.
+
 ## 📜 Giấy phép (License)
 Dự án được xây dựng cho mục đích học tập và nghiên cứu mã nguồn mở.
