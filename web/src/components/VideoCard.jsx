@@ -124,10 +124,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
           responded = true;
           window.removeEventListener("message", handleMessage);
           if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
-            alert("⚠️ LỖI KẾT NỐI EXTENSION ⚠️\n\nExtension vừa được cập nhật nhưng trang web chưa nhận diện được.\n\nVUI LÒNG LÀM THEO 2 BƯỚC:\n1. F5 (Tải lại) trang web XTok này.\n2. Đóng tab xác minh cũ, bấm Nút Đỏ để mở tab xác minh mới.");
             setNeedsVerification(true);
           } else if (event.data.error === "No xnhau tab open") {
-            alert("⚠️ LỖI: BẠN ĐÃ ĐÓNG TAB XÁC MINH QUÁ SỚM! ⚠️\n\nVui lòng bấm lại Nút Đỏ, đợi nó tải xong video rồi để nguyên tab đó (KHÔNG ĐƯỢC ĐÓNG), sau đó quay lại trang này bấm Nút Đen.");
             setNeedsVerification(true);
           } else if (event.data.error === "CAPTCHA") {
             setNeedsVerification(true);
