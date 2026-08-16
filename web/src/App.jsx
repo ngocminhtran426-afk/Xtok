@@ -24,18 +24,21 @@ const PrivateRoute = ({ children, requireAdmin = false }) => {
 import MobileNav from './components/MobileNav';
 import MobileHeader from './components/MobileHeader';
 
-const MainLayout = () => (
-  <div className="app-container">
-    <MobileHeader />
-    <Header />
-    <div className="main-content">
-      <Sidebar />
-      <VideoFeed />
-    </div>
-    <MobileNav />
-  </div>
-);
+const MainLayout = () => {
+  const [activeTab, setActiveTab] = React.useState('new'); // default to 'Đề xuất' (Mới nhất)
 
+  return (
+    <div className="app-container">
+      <MobileHeader />
+      <Header />
+      <div className="main-content">
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <VideoFeed activeTab={activeTab} />
+      </div>
+      <MobileNav />
+    </div>
+  );
+};
 function App() {
   return (
     <Routes>

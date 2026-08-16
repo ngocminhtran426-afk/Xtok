@@ -3,7 +3,7 @@ import axios from 'axios';
 import VideoCard from './VideoCard';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
-const VideoFeed = () => {
+const VideoFeed = ({ activeTab }) => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -11,19 +11,24 @@ const VideoFeed = () => {
   const feedRef = useRef(null);
 
   useEffect(() => {
-    fetchVideos(1);
-  }, []);
+    // Reset state when tab changes
+    setVideos([]);
+    setPage(1);
+    setHasMore(true);
+    setLoading(true);
+    fetchVideos(1, activeTab, true);
+  }, [activeTab]);
 
-  const fetchVideos = async (pageNum) => {
-    if (!hasMore) return;
+  const fetchVideos = async (pageNum, tabStr, isReset = false) => {
+    if (!isReset && !hasMore) return;
     try {
-      const response = await axios.get(`/api/videos?page=${pageNum}`);
+      const response = await axios.get(`/api/videos?page=${pageNum}&tab=${tabStr}`);
       const newVideos = response.data.data;
       if (newVideos.length === 0) {
         setHasMore(false);
       } else {
         const shuffled = newVideos.sort(() => Math.random() - 0.5);
-        setVideos(prev => [...prev, ...shuffled]);
+        setVideos(prev => isReset ? shuffled : [...prev, ...shuffled]);
       }
     } catch (error) {
       console.error("Failed to fetch videos:", error);
@@ -38,7 +43,7 @@ const VideoFeed = () => {
       setLoading(true);
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchVideos(nextPage);
+      fetchVideos(nextPage, activeTab);
     }
   };
 

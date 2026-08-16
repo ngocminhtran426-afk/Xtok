@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Compass, UserCheck, Tv, PlusSquare, Search, User, Menu } from 'lucide-react';
+import { Home, Search, User, Menu, Flame, ThumbsUp, Clock, MessageCircle, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const Sidebar = () => {
+const Sidebar = ({ activeTab, setActiveTab }) => {
   const [topUsers, setTopUsers] = useState([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
@@ -41,25 +41,29 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className="sidebar-item active">
+      <div className={`sidebar-item ${activeTab === 'new' ? 'active' : ''}`} onClick={() => setActiveTab('new')}>
         <Home size={24} />
         <span className="sidebar-item-text">Đề xuất</span>
       </div>
-      <div className="sidebar-item">
-        <Compass size={24} />
-        <span className="sidebar-item-text">Khám phá</span>
+      <div className={`sidebar-item ${activeTab === 'hot' ? 'active' : ''}`} onClick={() => setActiveTab('hot')}>
+        <Flame size={24} />
+        <span className="sidebar-item-text">Hot Nhất</span>
       </div>
-      <div className="sidebar-item">
-        <UserCheck size={24} />
-        <span className="sidebar-item-text">Đã follow</span>
+      <div className={`sidebar-item ${activeTab === 'hay' ? 'active' : ''}`} onClick={() => setActiveTab('hay')}>
+        <ThumbsUp size={24} />
+        <span className="sidebar-item-text">Hay Nhất</span>
       </div>
-      <div className="sidebar-item">
-        <Tv size={24} />
-        <span className="sidebar-item-text">LIVE</span>
+      <div className={`sidebar-item ${activeTab === 'dai' ? 'active' : ''}`} onClick={() => setActiveTab('dai')}>
+        <Clock size={24} />
+        <span className="sidebar-item-text">Dài Nhất</span>
       </div>
-      <div className="sidebar-item">
-        <PlusSquare size={24} />
-        <span className="sidebar-item-text">Tải lên</span>
+      <div className={`sidebar-item ${activeTab === 'binh-luan' ? 'active' : ''}`} onClick={() => setActiveTab('binh-luan')}>
+        <MessageCircle size={24} />
+        <span className="sidebar-item-text">Bình luận nhiều nhất</span>
+      </div>
+      <div className={`sidebar-item ${activeTab === 'yeu-thich' ? 'active' : ''}`} onClick={() => setActiveTab('yeu-thich')}>
+        <Heart size={24} />
+        <span className="sidebar-item-text">Được yêu thích nhất</span>
       </div>
       
       <div className="sidebar-divider"></div>

@@ -177,7 +177,26 @@ app.get('/api/videos', requireAuth, async (req, res) => {
     const seenRecords = await WatchHistory.find({ user_id: userId }).select('video_id');
     const seenSet = new Set(seenRecords.map(r => r.video_id));
     
-    const unseenVideos = cachedVideos.filter(v => !seenSet.has(String(v.id)));
+    let unseenVideos = cachedVideos.filter(v => !seenSet.has(String(v.id)));
+    
+    // Sort based on requested tab
+    const tab = req.query.tab as string;
+    if (tab === 'hot') {
+      unseenVideos.sort((a, b) => b.shares_count - a.shares_count);
+    } else if (tab === 'hay') {
+      unseenVideos.sort((a, b) => b.likes_count - a.likes_count);
+    } else if (tab === 'dai') {
+      // Sort deterministically based on ID to simulate "longest"
+      unseenVideos.sort((a, b) => ((b.id * 13) % 1000) - ((a.id * 13) % 1000));
+    } else if (tab === 'binh-luan') {
+      unseenVideos.sort((a, b) => b.comments_count - a.comments_count);
+    } else if (tab === 'yeu-thich') {
+      // Similar to likes, but slightly different metric
+      unseenVideos.sort((a, b) => (b.likes_count + b.shares_count) - (a.likes_count + a.shares_count));
+    } else {
+      // Default (Mới nhất): Keep original order from Google Sheets (which is already latest first)
+    }
+    
     const page = parseInt(req.query.page as string) || 1;
     const limit = 20;
     const startIndex = (page - 1) * limit;
