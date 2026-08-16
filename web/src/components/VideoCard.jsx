@@ -153,11 +153,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       };
     }
   }, [inView, isTiktok, useEmbedFallback, rawMp4Url, video.file_url, mainDomain, resolvedMp4Url, iframeStatus]);
-        window.removeEventListener("message", handleMessage);
-      };
-    }
-  }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, retryCount]);
-  
+
   const finalMp4Url = rawMp4Url || resolvedMp4Url;
 
   const togglePlay = () => {
