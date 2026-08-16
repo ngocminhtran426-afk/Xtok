@@ -4,33 +4,21 @@ if (window.location.hostname.includes('xnhau')) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "FETCH_XNHAU_PROXY") {
       
-      // Tạo iframe để load trang embed, giống như trình duyệt thật
-      // TRÁNH dùng display: 'none' vì Chrome có thể ngưng tải iframe trong background tab
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '10px';
-      iframe.style.height = '10px';
-      iframe.style.opacity = '0';
-      
-      // Đặt timeout nếu iframe không load được
-      const timeoutId = setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
+      fetch(request.url, { 
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         }
-        sendResponse({ mp4Url: null, error: "TIMEOUT" });
-      }, 25000);
-
-      iframe.onload = () => {
-        clearTimeout(timeoutId);
-        try {
-          const doc = iframe.contentDocument || iframe.contentWindow.document;
-          const html = doc.body.innerHTML;
+      })
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.text();
+        })
+        .then(html => {
           chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
 
           // Kiểm tra Cloudflare challenge
           if (html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification')) {
-            document.body.removeChild(iframe);
             sendResponse({ mp4Url: null, error: "CAPTCHA" });
             return;
           }
@@ -52,23 +40,20 @@ if (window.location.hostname.includes('xnhau')) {
             mp4Url = mp4Url.replace(/['"',;\s]+$/, '');
           }
 
-          document.body.removeChild(iframe);
-          
           if (mp4Url) {
             sendResponse({ mp4Url: mp4Url });
           } else {
             sendResponse({ mp4Url: null, error: "NO_MP4", debug: html.substring(0, 500) });
           }
-        } catch (err) {
-          document.body.removeChild(iframe);
-          chrome.storage.local.set({ debug_html: "Iframe Error: " + err.message });
-          // Lỗi cross-origin nghĩa là CF đã redirect sang trang thử thách
-          sendResponse({ mp4Url: null, error: "CAPTCHA", detail: err.message });
-        }
-      };
-
-      iframe.src = request.url;
-      document.body.appendChild(iframe);
+        })
+        .catch(err => {
+          chrome.storage.local.set({ debug_html: "Fetch Error: " + err.message });
+          if (err.message.includes('403')) {
+            sendResponse({ mp4Url: null, error: "CAPTCHA" });
+          } else {
+            sendResponse({ mp4Url: null, error: "FETCH_FAILED", detail: err.message });
+          }
+        });
 
       return true; // async sendResponse
     }
