@@ -117,9 +117,11 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     if (videoId) {
       const targetUrl = `https://xnhau.ink/embed/${videoId}`;
       const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
+      let responded = false; // Tránh timeout ghi đè kết quả đã nhận
       
       const handleMessage = (event) => {
         if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
+          responded = true;
           window.removeEventListener("message", handleMessage);
           if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
             alert("⚠️ LỖI KẾT NỐI EXTENSION ⚠️\n\nExtension vừa được cập nhật nhưng trang web chưa nhận diện được.\n\nVUI LÒNG LÀM THEO 2 BƯỚC:\n1. F5 (Tải lại) trang web XTok này.\n2. Đóng tab xác minh cũ, bấm Nút Đỏ để mở tab xác minh mới.");
@@ -143,11 +145,19 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
       window.addEventListener("message", handleMessage);
       window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
       
-      // Timeout fallback in case extension is not running
-      setTimeout(() => {
-        window.removeEventListener("message", handleMessage);
-        setResolvedMp4Url(prev => prev || fallbackUrl);
+      // Timeout fallback chỉ khi extension không phản hồi
+      const timeoutId = setTimeout(() => {
+        if (!responded) {
+          window.removeEventListener("message", handleMessage);
+          // Extension không chạy → hiện thông báo xác minh thay vì cố tải URL trực tiếp
+          setNeedsVerification(true);
+        }
       }, 10000);
+
+      return () => {
+        clearTimeout(timeoutId);
+        window.removeEventListener("message", handleMessage);
+      };
     }
   }, [video.file_url, isTiktok, useEmbedFallback, rawMp4Url, retryCount]);
   
@@ -303,7 +313,6 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         setTimeout(() => clearInterval(tryPlay), 15000);
       })();
     `);
-    setVolume(newVol);
   };
 
   // Ẩn nội dung chờ lấy được video metadata thật để không bị layout shift
@@ -371,7 +380,11 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 1. Mở trang xác minh
               </button>
               <button 
-                onClick={() => setRetryCount(prev => prev + 1)}
+                onClick={() => {
+                  setResolvedMp4Url(null);
+                  setNeedsVerification(false);
+                  setRetryCount(prev => prev + 1);
+                }}
                 style={{ flex: 1, backgroundColor: 'transparent', color: 'white', border: '1px solid #ff3b5c', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
               >
                 2. Đã xong, Tải lại
