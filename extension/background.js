@@ -77,7 +77,7 @@ function updateDynamicRule(cookieValue) {
     condition: {
       urlFilter: '||xnhau.',
       resourceTypes: ['sub_frame', 'media', 'xmlhttprequest'],
-      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1', PRIMARY_DOMAIN]
+      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1']
     }
   };
 
