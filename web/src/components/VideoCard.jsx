@@ -102,9 +102,11 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     rawMp4Url = video.file_url;
   }
 
-  // Fetch dynamic MP4 URL with token
+  const [iframeStatus, setIframeStatus] = useState('loading'); // 'loading', 'captcha', 'solved'
+
+  // Fetch dynamic MP4 URL with token via Iframe Auto-Solve
   useEffect(() => {
-    if (isTiktok || useEmbedFallback || rawMp4Url) return;
+    if (isTiktok || useEmbedFallback || rawMp4Url || !inView || resolvedMp4Url) return;
     
     let videoId = null;
     if (video.file_url?.startsWith('xnhau:')) {
@@ -116,38 +118,41 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
     if (videoId) {
       const targetUrl = `${mainDomain}/embed/${videoId}`;
-      const fallbackUrl = `${mainDomain}/video/${videoId}.mp4`;
-      let responded = false; // Tránh timeout ghi đè kết quả đã nhận
       
       const handleMessage = (event) => {
-        if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
-          responded = true;
-          window.removeEventListener("message", handleMessage);
-          if (event.data.mp4Url) {
-            setResolvedMp4Url(event.data.mp4Url);
-            setNeedsVerification(false);
-            window.__lastError = null;
-          } else {
-            window.__lastError = event.data.error || "Unknown Error";
-            setNeedsVerification(true);
+        if (event.data && event.data.url === targetUrl) {
+          if (event.data.type === "CAPTCHA_REQUIRED") {
+            setIframeStatus('captcha');
+          } else if (event.data.type === "CAPTCHA_SOLVED") {
+            if (event.data.mp4Url) {
+              setResolvedMp4Url(event.data.mp4Url);
+              setIframeStatus('solved');
+              window.__lastError = null;
+              setNeedsVerification(false);
+            } else {
+              window.__lastError = "NO_MP4";
+              setNeedsVerification(true);
+            }
           }
         }
       };
       
       window.addEventListener("message", handleMessage);
-      window.postMessage({ type: "FETCH_XNHAU", url: targetUrl }, "*");
       
-      // Timeout fallback chỉ khi extension không phản hồi
+      // Auto-fallback sau 15s nếu iframe không nạp được
       const timeoutId = setTimeout(() => {
-        if (!responded) {
-          window.removeEventListener("message", handleMessage);
-          // Extension không chạy → hiện thông báo xác minh thay vì cố tải URL trực tiếp
+        if (iframeStatus === 'loading' && !resolvedMp4Url) {
+          window.__lastError = "IFRAME_TIMEOUT";
           setNeedsVerification(true);
         }
-      }, 10000);
+      }, 15000);
 
       return () => {
+        window.removeEventListener("message", handleMessage);
         clearTimeout(timeoutId);
+      };
+    }
+  }, [inView, isTiktok, useEmbedFallback, rawMp4Url, video.file_url, mainDomain, resolvedMp4Url, iframeStatus]);
         window.removeEventListener("message", handleMessage);
       };
     }
@@ -395,6 +400,28 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
           </div>
         )}
 
+        {/* Iframe Auto-Solve */}
+        {!isTiktok && !useEmbedFallback && !rawMp4Url && inView && iframeStatus !== 'solved' && !resolvedMp4Url && embedSrc ? (
+          <div className="webview-container" style={{ 
+            backgroundPosition: 'center', 
+            zIndex: iframeStatus === 'captcha' ? 10 : -1, 
+            opacity: iframeStatus === 'captcha' ? 1 : 0,
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0
+          }}>
+            <iframe 
+              src={embedSrc}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+            {iframeStatus === 'captcha' && (
+              <div style={{ position: 'absolute', top: 10, left: 10, right: 10, textAlign: 'center', background: 'rgba(0,0,0,0.8)', color: '#fff', padding: '15px', fontSize: '14px', zIndex: 11, borderRadius: '8px', border: '1px solid #ff3b5c' }}>
+                <strong style={{color: '#ff3b5c', display: 'block', marginBottom: '5px'}}>⚠️ Yêu cầu xác minh</strong>
+                Vui lòng tick vào ô Captcha bên dưới để tiếp tục xem video.<br/>
+                <span style={{fontSize: '12px', color: '#ccc'}}>(Chỉ cần xác minh 1 lần)</span>
+              </div>
+            )}
+          </div>
+        ) : null}
+
         {isTiktok || (useEmbedFallback && embedSrc) ? (
           <div className="webview-container" style={{ 
             backgroundPosition: 'center' 
@@ -417,7 +444,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center',
             backgroundImage: `url(${video.thumb_url})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundPosition: 'center',
+            zIndex: 1 // Đảm bảo video nằm trên iframe ẩn
           }}>
             {inView ? (
               <video 

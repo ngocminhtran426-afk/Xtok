@@ -1,4 +1,28 @@
 if (window.location.hostname.includes('xnhau')) {
+  // === IFRAME AUTO-SOLVE MODE (Chạy ngầm trong Iframe trên Web App) ===
+  if (window !== window.top) {
+    const html = document.body.innerHTML;
+    if (html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification')) {
+      window.parent.postMessage({ type: "CAPTCHA_REQUIRED", url: window.location.href }, "*");
+    } else {
+      let mp4Url = null;
+      const videoUrlMatch = html.match(/video_url:\s*['"]([^'"]+)['"]/);
+      if (videoUrlMatch) mp4Url = videoUrlMatch[1];
+      if (!mp4Url) {
+        const mp4Match = html.match(/https:\/\/[^"'\s]*\.mp4[^"'\s]*/i);
+        if (mp4Match) mp4Url = mp4Match[0];
+      }
+      if (!mp4Url) {
+        const m3u8Match = html.match(/https:\/\/[^"'\s]*\.m3u8[^"'\s]*/i);
+        if (m3u8Match) mp4Url = m3u8Match[0];
+      }
+      if (mp4Url) {
+        mp4Url = mp4Url.replace(/['"',;\s\/]+$/, '');
+        window.parent.postMessage({ type: "CAPTCHA_SOLVED", url: window.location.href, mp4Url: mp4Url }, "*");
+      }
+    }
+  }
+
   // === PROXY MODE: chạy trên tab xnhau.pics ===
   // Lắng nghe request từ background script
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -37,7 +61,7 @@ if (window.location.hostname.includes('xnhau')) {
             if (m3u8Match) mp4Url = m3u8Match[0];
           }
           if (mp4Url) {
-            mp4Url = mp4Url.replace(/['"',;\s]+$/, '');
+            mp4Url = mp4Url.replace(/['"',;\s\/]+$/, '');
           }
 
           if (mp4Url) {

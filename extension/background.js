@@ -101,7 +101,7 @@ function removeDynamicRule() {
   chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [2] });
 }
 
-// Lắng nghe message từ popup (đổi domain) và từ content script (fetch video)
+// Lắng nghe message từ popup (đổi domain)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Popup báo domain đã thay đổi
   if (request.type === 'DOMAIN_CHANGED') {
@@ -113,27 +113,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     checkExistingCookies();
     sendResponse({ success: true });
     return;
-  }
-
-  // Content script yêu cầu fetch video qua tab xnhau
-  if (request.type === "FETCH_XNHAU") {
-    chrome.tabs.query({}, (allTabs) => {
-      const xnhauTab = allTabs.find(tab =>
-        tab.url && tab.url.includes('xnhau')
-      );
-
-      if (xnhauTab) {
-        chrome.tabs.sendMessage(xnhauTab.id, { type: "FETCH_XNHAU_PROXY", url: request.url }, (response) => {
-          if (chrome.runtime.lastError) {
-            sendResponse({ mp4Url: null, error: "Tab proxy failed", detail: chrome.runtime.lastError.message });
-          } else {
-            sendResponse(response);
-          }
-        });
-      } else {
-        sendResponse({ mp4Url: null, error: "No xnhau tab open" });
-      }
-    });
-    return true; // async
   }
 });

@@ -18,7 +18,8 @@
   "content_scripts": [
     {
       "matches": ["*://xtok-app.onrender.com/*", "*://localhost/*", "*://127.0.0.1/*", "*://*.xnhau.loan/*", "*://*.xnhau.tech/*", "*://*.xnhau.ink/*", "*://xnhau.ink/*", "*://*.xnhau.pics/*", "*://xnhau.pics/*"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "all_frames": true
     }
   ],
   "action": {
