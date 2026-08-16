@@ -1,39 +1,37 @@
 // Lưu trữ cookie hiện tại để tránh update rule liên tục
 let currentClearance = '';
 
-// Danh sách domain xnhau hỗ trợ (đồng bộ với manifest.json)
-const XNHAU_DOMAINS = ['xnhau.pics', 'xnhau.ink', 'xnhau.loan', 'xnhau.tech'];
-const PRIMARY_DOMAIN = 'xnhau.pics';
+// Default domain — sẽ bị ghi đè nếu user đã cấu hình trong Settings
+const DEFAULT_DOMAIN = 'xnhau.pics';
+let PRIMARY_DOMAIN = DEFAULT_DOMAIN;
 
-// Khởi tạo rule từ storage khi extension bật lên
-chrome.storage.local.get(['cf_clearance'], (result) => {
-  if (result.cf_clearance) {
-    currentClearance = result.cf_clearance;
-    updateDynamicRule(currentClearance);
-  } else {
-    // Nếu chưa có trong storage, thử tìm trong trình duyệt
-    checkExistingCookies();
+// Load domain từ storage (user có thể đã đổi qua Settings)
+chrome.storage.local.get(['primary_domain'], (result) => {
+  if (result.primary_domain) {
+    PRIMARY_DOMAIN = result.primary_domain;
   }
+  // Sau khi có domain, khởi tạo rules
+  initRules();
 });
 
-function checkExistingCookies() {
-  // Kiểm tra tất cả domain xnhau
-  const allCookiePromises = XNHAU_DOMAINS.map(domain =>
-    new Promise(resolve => {
-      chrome.cookies.getAll({ domain }, cookies => resolve(cookies || []));
-    })
-  );
+function initRules() {
+  chrome.storage.local.get(['cf_clearance'], (result) => {
+    if (result.cf_clearance) {
+      currentClearance = result.cf_clearance;
+      updateDynamicRule(currentClearance);
+    } else {
+      checkExistingCookies();
+    }
+  });
+}
 
-  Promise.all(allCookiePromises).then(results => {
-    const allCookies = results.flat();
-    const debugInfo = allCookies.map(c => c.name + ':' + c.domain).join(', ');
+function checkExistingCookies() {
+  chrome.cookies.getAll({ domain: PRIMARY_DOMAIN }, (cookies) => {
+    const debugInfo = (cookies || []).map(c => c.name + ':' + c.domain).join(', ');
     chrome.storage.local.set({ debug_cookies: debugInfo });
 
-    if (allCookies.length > 0) {
-      // Ưu tiên cookies từ primary domain, hoặc lấy tất cả
-      const primaryCookies = allCookies.filter(c => c.domain.includes(PRIMARY_DOMAIN));
-      const cookiesToUse = primaryCookies.length > 0 ? primaryCookies : allCookies;
-      const cookieString = cookiesToUse.map(c => `${c.name}=${c.value}`).join('; ');
+    if (cookies && cookies.length > 0) {
+      const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
       chrome.storage.local.set({ cf_clearance: cookieString });
       updateDynamicRule(cookieString);
     }
@@ -43,9 +41,8 @@ function checkExistingCookies() {
 // Lắng nghe sự kiện cookie thay đổi (khi người dùng giải captcha)
 chrome.cookies.onChanged.addListener((changeInfo) => {
   const cookie = changeInfo.cookie;
-  // Kiểm tra tất cả domain xnhau, không chỉ 1
-  const isXnhau = XNHAU_DOMAINS.some(d => cookie.domain.includes(d));
-  if (!isXnhau) return;
+  // Dùng 'xnhau' để match tất cả domain (ink, pics, loan, tech...)
+  if (!cookie.domain.includes('xnhau')) return;
 
   chrome.storage.local.get(['debug_cookies'], (result) => {
     chrome.storage.local.set({
@@ -53,7 +50,7 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
     });
   });
 
-  // Sau khi cookie thay đổi, lấy lại tất cả cookies mới nhất
+  // Lấy lại cookies từ domain hiện tại
   chrome.cookies.getAll({ domain: PRIMARY_DOMAIN }, (allCookies) => {
     if (allCookies && allCookies.length > 0) {
       const cookieString = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
@@ -68,7 +65,7 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 
 function updateDynamicRule(cookieValue) {
   const rule = {
-    id: 2, // ID 1 đã dành cho rules.json (static)
+    id: 2,
     priority: 2,
     action: {
       type: 'modifyHeaders',
@@ -78,41 +75,47 @@ function updateDynamicRule(cookieValue) {
       ]
     },
     condition: {
-      // Match tất cả domain xnhau
       urlFilter: '||xnhau.',
       resourceTypes: ['sub_frame', 'media', 'xmlhttprequest'],
-      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1', ...XNHAU_DOMAINS]
+      initiatorDomains: ['xtok-app.onrender.com', 'localhost', '127.0.0.1', PRIMARY_DOMAIN]
     }
   };
 
   chrome.declarativeNetRequest.updateDynamicRules(
-    {
-      removeRuleIds: [2],
-      addRules: [rule]
-    },
+    { removeRuleIds: [2], addRules: [rule] },
     () => {
       if (chrome.runtime.lastError) {
         console.error('Failed to update dynamic rule:', chrome.runtime.lastError);
       } else {
-        console.log('Đã cập nhật Dynamic Rule ép Cookie cf_clearance thành công!');
+        console.log(`Dynamic Rule updated for ${PRIMARY_DOMAIN}`);
       }
     }
   );
 }
 
 function removeDynamicRule() {
-  chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [2]
-  });
+  chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [2] });
 }
 
+// Lắng nghe message từ popup (đổi domain) và từ content script (fetch video)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Popup báo domain đã thay đổi
+  if (request.type === 'DOMAIN_CHANGED') {
+    PRIMARY_DOMAIN = request.domain;
+    console.log(`Domain changed to: ${PRIMARY_DOMAIN}`);
+    // Xóa cookie cũ, kiểm tra lại với domain mới
+    chrome.storage.local.remove(['cf_clearance']);
+    removeDynamicRule();
+    checkExistingCookies();
+    sendResponse({ success: true });
+    return;
+  }
+
+  // Content script yêu cầu fetch video qua tab xnhau
   if (request.type === "FETCH_XNHAU") {
-    // Tìm tab xnhau.ink đang mở để gửi proxy request
     chrome.tabs.query({}, (allTabs) => {
-      // Tìm tab xnhau từ tất cả domain
       const xnhauTab = allTabs.find(tab =>
-        tab.url && XNHAU_DOMAINS.some(d => tab.url.includes(d))
+        tab.url && tab.url.includes('xnhau')
       );
 
       if (xnhauTab) {
