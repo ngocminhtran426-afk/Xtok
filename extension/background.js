@@ -2,8 +2,8 @@
 let currentClearance = '';
 
 // Danh sách domain xnhau hỗ trợ (đồng bộ với manifest.json)
-const XNHAU_DOMAINS = ['xnhau.ink', 'xnhau.loan', 'xnhau.tech'];
-const PRIMARY_DOMAIN = 'xnhau.ink';
+const XNHAU_DOMAINS = ['xnhau.pics', 'xnhau.ink', 'xnhau.loan', 'xnhau.tech'];
+const PRIMARY_DOMAIN = 'xnhau.pics';
 
 // Khởi tạo rule từ storage khi extension bật lên
 chrome.storage.local.get(['cf_clearance'], (result) => {

@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bấm nút mở trang mồi
   btnBypass.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://xnhau.ink/embed/37851' });
+    chrome.tabs.create({ url: 'https://xnhau.pics/embed/37851' });
   });
 
   // Lắng nghe thay đổi storage để tự update UI

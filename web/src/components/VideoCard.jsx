@@ -75,8 +75,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
 
   // Phân loại Link Video
   const isTiktok = video.file_url?.includes('tiktok.com');
-  const cdnDomain = localStorage.getItem('xnhau_cdnDomain') || 'https://m.xnhau.ink';
-  const mainDomain = localStorage.getItem('xnhau_mainDomain') || 'https://xnhau.ink';
+  const cdnDomain = localStorage.getItem('xnhau_cdnDomain') || 'https://m.xnhau.pics';
+  const mainDomain = localStorage.getItem('xnhau_mainDomain') || 'https://xnhau.pics';
 
   let rawMp4Url = '';
   let embedSrc = '';
@@ -115,8 +115,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
     }
 
     if (videoId) {
-      const targetUrl = `https://xnhau.ink/embed/${videoId}`;
-      const fallbackUrl = `https://xnhau.ink/video/${videoId}.mp4`;
+      const targetUrl = `${mainDomain}/embed/${videoId}`;
+      const fallbackUrl = `${mainDomain}/video/${videoId}.mp4`;
       let responded = false; // Tránh timeout ghi đè kết quả đã nhận
       
       const handleMessage = (event) => {
@@ -372,7 +372,7 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             </p>
             <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
               <button 
-                onClick={() => window.open(`https://xnhau.ink/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`, '_blank')}
+                onClick={() => window.open(`${mainDomain}/embed/${video.file_url.split(':')[1] || video.file_url.match(/\/embed\/(\d+)/)?.[1]}`, '_blank')}
                 style={{ flex: 1, backgroundColor: '#ff3b5c', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
               >
                 1. Mở trang xác minh

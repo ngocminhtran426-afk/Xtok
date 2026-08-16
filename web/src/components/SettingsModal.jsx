@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 const SettingsModal = ({ isOpen, onClose }) => {
-  const [mainDomain, setMainDomain] = useState(localStorage.getItem('xnhau_mainDomain') || 'https://xnhau.ink');
-  const [cdnDomain, setCdnDomain] = useState(localStorage.getItem('xnhau_cdnDomain') || 'https://m.xnhau.ink');
+  const [mainDomain, setMainDomain] = useState(localStorage.getItem('xnhau_mainDomain') || 'https://xnhau.pics');
+  const [cdnDomain, setCdnDomain] = useState(localStorage.getItem('xnhau_cdnDomain') || 'https://m.xnhau.pics');
 
   const handleSave = () => {
     localStorage.setItem('xnhau_mainDomain', mainDomain);
