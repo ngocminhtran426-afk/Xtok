@@ -31,9 +31,12 @@ function checkExistingCookies() {
     chrome.storage.local.set({ debug_cookies: debugInfo });
 
     if (cookies && cookies.length > 0) {
-      const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-      chrome.storage.local.set({ cf_clearance: cookieString });
-      updateDynamicRule(cookieString);
+      const cfCookie = cookies.find(c => c.name === 'cf_clearance');
+      if (cfCookie) {
+        const cookieString = `cf_clearance=${cfCookie.value}`;
+        chrome.storage.local.set({ cf_clearance: cookieString });
+        updateDynamicRule(cookieString);
+      }
     }
   });
 }
@@ -50,12 +53,14 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
     });
   });
 
-  // Lấy lại cookies từ domain hiện tại
   chrome.cookies.getAll({ domain: PRIMARY_DOMAIN }, (allCookies) => {
     if (allCookies && allCookies.length > 0) {
-      const cookieString = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
-      chrome.storage.local.set({ cf_clearance: cookieString });
-      updateDynamicRule(cookieString);
+      const cfCookie = allCookies.find(c => c.name === 'cf_clearance');
+      if (cfCookie) {
+        const cookieString = `cf_clearance=${cfCookie.value}`;
+        chrome.storage.local.set({ cf_clearance: cookieString });
+        updateDynamicRule(cookieString);
+      }
     } else {
       chrome.storage.local.remove(['cf_clearance']);
       removeDynamicRule();
@@ -70,7 +75,7 @@ function updateDynamicRule(cookieValue) {
     action: {
       type: 'modifyHeaders',
       requestHeaders: [
-        { header: 'Cookie', operation: 'set', value: cookieValue },
+        { header: 'Cookie', operation: 'append', value: cookieValue },
         { header: 'Referer', operation: 'set', value: `https://${PRIMARY_DOMAIN}/` }
       ]
     },
