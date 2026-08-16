@@ -5,8 +5,13 @@ if (window.location.hostname.includes('xnhau')) {
     if (request.type === "FETCH_XNHAU_PROXY") {
       
       // Tạo iframe để load trang embed, giống như trình duyệt thật
+      // TRÁNH dùng display: 'none' vì Chrome có thể ngưng tải iframe trong background tab
       const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '10px';
+      iframe.style.height = '10px';
+      iframe.style.opacity = '0';
       
       // Đặt timeout nếu iframe không load được
       const timeoutId = setTimeout(() => {
@@ -14,7 +19,7 @@ if (window.location.hostname.includes('xnhau')) {
           document.body.removeChild(iframe);
         }
         sendResponse({ mp4Url: null, error: "TIMEOUT" });
-      }, 15000);
+      }, 25000);
 
       iframe.onload = () => {
         clearTimeout(timeoutId);
