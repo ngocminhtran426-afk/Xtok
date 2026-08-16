@@ -422,13 +422,13 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
                 muted={isMuted}
                 autoPlay
                 playsInline
-                referrerPolicy="no-referrer"
                 onClick={togglePlay}
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 style={{ position: 'relative', zIndex: 1 }}
-                onError={() => {
-                  console.log("MP4 load failed");
+                onError={(e) => {
+                  console.log("MP4 load failed", e);
+                  window.__lastError = "VIDEO_ON_ERROR (MP4 stream bị chặn)";
                   setNeedsVerification(true);
                 }}
               />
