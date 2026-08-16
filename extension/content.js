@@ -4,70 +4,66 @@ if (window.location.hostname.includes('xnhau')) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "FETCH_XNHAU_PROXY") {
       
-      fetch(request.url, { 
-        credentials: 'include',
-        headers: {
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      // Tạo iframe để load trang embed, giống như trình duyệt thật
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      
+      // Đặt timeout nếu iframe không load được
+      const timeoutId = setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
         }
-      })
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.text();
-        })
-        .then(html => {
+        sendResponse({ mp4Url: null, error: "TIMEOUT" });
+      }, 15000);
+
+      iframe.onload = () => {
+        clearTimeout(timeoutId);
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          const html = doc.body.innerHTML;
           chrome.storage.local.set({ debug_html: html.substring(0, 1000) });
 
           // Kiểm tra Cloudflare challenge
-          const isCaptcha = html.includes('cf-turnstile') ||
-            html.includes('Just a moment') ||
-            html.includes('cf-browser-verification') ||
-            html.includes('captcha-box');
-
-          if (isCaptcha) {
+          if (html.includes('cf-turnstile') || html.includes('Just a moment') || html.includes('cf-browser-verification')) {
+            document.body.removeChild(iframe);
             sendResponse({ mp4Url: null, error: "CAPTCHA" });
             return;
           }
 
-          // Parse video URL — hỗ trợ format mới: video_url: 'https://...get_file/.../37851.mp4/'
           let mp4Url = null;
-
-          // 1. Tìm video_url trong JavaScript object (chính xác nhất)
           const videoUrlMatch = html.match(/video_url:\s*['"]([^'"]+)['"]/);
           if (videoUrlMatch) {
             mp4Url = videoUrlMatch[1];
           }
-
-          // 2. Fallback: tìm URL .mp4 bất kỳ (kể cả có / sau .mp4)
           if (!mp4Url) {
             const mp4Match = html.match(/https:\/\/[^"'\s]*\.mp4[^"'\s]*/i);
             if (mp4Match) mp4Url = mp4Match[0];
           }
-
-          // 3. Fallback: tìm .m3u8
           if (!mp4Url) {
             const m3u8Match = html.match(/https:\/\/[^"'\s]*\.m3u8[^"'\s]*/i);
             if (m3u8Match) mp4Url = m3u8Match[0];
           }
-
-          // 4. Cleanup: loại bỏ trailing quote/comma nếu bị regex bắt thừa
           if (mp4Url) {
             mp4Url = mp4Url.replace(/['"',;\s]+$/, '');
           }
 
+          document.body.removeChild(iframe);
+          
           if (mp4Url) {
             sendResponse({ mp4Url: mp4Url });
           } else {
             sendResponse({ mp4Url: null, error: "NO_MP4", debug: html.substring(0, 500) });
           }
-        })
-        .catch(err => {
-          chrome.storage.local.set({ debug_html: "Fetch Error: " + err.message });
-          if (err.message.includes('403')) {
-            sendResponse({ mp4Url: null, error: "CAPTCHA" });
-          } else {
-            sendResponse({ mp4Url: null, error: "FETCH_FAILED", detail: err.message });
-          }
-        });
+        } catch (err) {
+          document.body.removeChild(iframe);
+          chrome.storage.local.set({ debug_html: "Iframe Error: " + err.message });
+          // Lỗi cross-origin nghĩa là CF đã redirect sang trang thử thách
+          sendResponse({ mp4Url: null, error: "CAPTCHA", detail: err.message });
+        }
+      };
+
+      iframe.src = request.url;
+      document.body.appendChild(iframe);
 
       return true; // async sendResponse
     }
