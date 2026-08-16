@@ -123,18 +123,12 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
         if (event.data && event.data.type === "FETCH_XNHAU_RESULT" && event.data.url === targetUrl) {
           responded = true;
           window.removeEventListener("message", handleMessage);
-          if (event.data.error === "EXTENSION_DISCONNECTED" || event.data.error === "Tab proxy failed") {
-            setNeedsVerification(true);
-          } else if (event.data.error === "No xnhau tab open") {
-            setNeedsVerification(true);
-          } else if (event.data.error === "CAPTCHA") {
-            setNeedsVerification(true);
-          } else if (event.data.error === "NO_MP4") {
-            setNeedsVerification(true);
-          } else if (event.data.mp4Url) {
+          if (event.data.mp4Url) {
             setResolvedMp4Url(event.data.mp4Url);
             setNeedsVerification(false);
+            window.__lastError = null;
           } else {
+            window.__lastError = event.data.error || "Unknown Error";
             setNeedsVerification(true);
           }
         }
@@ -368,7 +362,8 @@ const VideoCard = ({ video, isActive, onVideoEnd }) => {
             </button>
             <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '15px' }}>⚠️ Lỗi: Video bị chặn</h4>
             <p style={{ color: '#ccc', fontSize: '12px', marginBottom: '15px', textAlign: 'center' }}>
-              Nếu video không tải được, hãy mở trang xác minh (KHÔNG ĐÓNG TAB ĐÓ), rồi quay lại đây tải lại.
+              Nếu video không tải được, hãy mở trang xác minh (KHÔNG ĐÓNG TAB ĐÓ), rồi quay lại đây tải lại.<br/><br/>
+              Mã lỗi: <strong style={{ color: '#ff3b5c' }}>{window.__lastError || "TIMEOUT"}</strong>
             </p>
             <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
               <button 
